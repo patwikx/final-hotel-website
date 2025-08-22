@@ -1,5 +1,5 @@
 // app/api/amenities/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -17,9 +17,10 @@ const updateAmenitySchema = z.object({
 /**
  * Handles GET requests for a single amenity.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const amenity = await prisma.amenity.findUnique({ where: { id: params.id } });
+    const { id } = await params;
+    const amenity = await prisma.amenity.findUnique({ where: { id } });
     if (!amenity) {
       return new NextResponse('Amenity not found', { status: 404 });
     }
@@ -33,9 +34,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update an amenity.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
+    const { id } = await params;
     const body = await req.json();
     const validation = updateAmenitySchema.safeParse(body);
 
@@ -44,7 +46,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const updatedAmenity = await prisma.amenity.update({
-      where: { id: params.id },
+      where: { id },
       data: validation.data,
     });
 
@@ -58,10 +60,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete an amenity.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
-    await prisma.amenity.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.amenity.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('[AMENITY_DELETE]', error);

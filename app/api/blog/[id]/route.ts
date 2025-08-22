@@ -1,5 +1,4 @@
-// app/api/blog/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { PublishStatus } from '@prisma/client';
@@ -26,9 +25,9 @@ const updateBlogPostSchema = z.object({
 /**
  * Handles GET requests to fetch a single blog post by its ID.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const blogPost = await prisma.blogPost.findUnique({
       where: { id },
     });
@@ -47,10 +46,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update an existing blog post.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add authentication and authorization check here.
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const validation = updateBlogPostSchema.safeParse(body);
@@ -89,10 +88,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete a blog post.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add authentication and authorization check here.
-    const { id } = params;
+    const { id } = await params;
 
     const blogPost = await prisma.blogPost.findUnique({ where: { id } });
     if (!blogPost) {

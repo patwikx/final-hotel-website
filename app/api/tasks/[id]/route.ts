@@ -1,5 +1,4 @@
-// app/api/tasks/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { ServiceCategory, TaskPriority, ServiceStatus } from '@prisma/client';
@@ -20,9 +19,10 @@ const updateTaskSchema = z.object({
 /**
  * Handles GET requests for a single task.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const task = await prisma.task.findUnique({ where: { id: params.id } });
+        const { id } = await params;
+        const task = await prisma.task.findUnique({ where: { id } });
         if (!task) {
             return new NextResponse('Task not found', { status: 404 });
         }
@@ -37,9 +37,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update a task.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
+    const { id } = await params;
     const body = await req.json();
     const validation = updateTaskSchema.safeParse(body);
 
@@ -48,7 +49,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const updatedTask = await prisma.task.update({
-      where: { id: params.id },
+      where: { id },
       data: validation.data,
     });
 
@@ -62,10 +63,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete a task.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         // TODO: Add auth check
-        await prisma.task.delete({ where: { id: params.id } });
+        const { id } = await params;
+        await prisma.task.delete({ where: { id } });
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('[TASK_DELETE]', error);

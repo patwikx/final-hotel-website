@@ -1,5 +1,4 @@
-// app/api/business-units/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { PropertyType } from '@prisma/client';
@@ -51,13 +50,10 @@ const updateBusinessUnitSchema = z.object({
 
 /**
  * Handles GET requests to fetch a single business unit by its ID.
- * @param {Request} req - The incoming request object.
- * @param {{ params: { id: string } }} context - The context object containing route parameters.
- * @returns {Promise<NextResponse>} A promise that resolves to the response.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params; // Await the params object
 
     const businessUnit = await prisma.businessUnit.findUnique({
       where: { id },
@@ -76,14 +72,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
 /**
  * Handles PATCH requests to update an existing business unit.
- * @param {Request} req - The incoming request object.
- * @param {{ params: { id: string } }} context - The context object containing route parameters.
- * @returns {Promise<NextResponse>} A promise that resolves to the response.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add authentication and authorization check here.
-    const { id } = params;
+    const { id } = await params; // Await the params object
     const body = await req.json();
 
     const validation = updateBusinessUnitSchema.safeParse(body);
@@ -123,14 +116,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
 /**
  * Handles DELETE requests to delete a business unit.
- * @param {Request} req - The incoming request object.
- * @param {{ params: { id: string } }} context - The context object containing route parameters.
- * @returns {Promise<NextResponse>} A promise that resolves to the response.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add authentication and authorization check here.
-    const { id } = params;
+    const { id } = await params; // Await the params object
 
     await prisma.businessUnit.delete({
       where: { id },

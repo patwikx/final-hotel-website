@@ -1,5 +1,5 @@
 // app/api/navigation/[id]/items/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -17,10 +17,10 @@ const createNavigationItemSchema = z.object({
 /**
  * Handles POST requests to add a new item to a navigation menu.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         // TODO: Add auth check
-        const menuId = params.id;
+        const { id: menuId } = await params;
         const body = await req.json();
         const validation = createNavigationItemSchema.safeParse(body);
 

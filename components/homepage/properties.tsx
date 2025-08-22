@@ -7,6 +7,7 @@ import { MapPin, ArrowRight, Building, Star, Wifi, Car, Utensils, Waves, Users, 
 import { motion } from "framer-motion"
 import { BusinessUnit } from "@prisma/client"
 import Link from "next/link"
+import type { LucideIcon } from "lucide-react" // Import the LucideIcon type
 
 interface BusinessUnitsSectionProps {
   businessUnits: BusinessUnit[];
@@ -15,8 +16,16 @@ interface BusinessUnitsSectionProps {
 export function BusinessUnitsSection({ businessUnits = [] }: BusinessUnitsSectionProps) {
   if (businessUnits.length === 0) return null;
 
-  const getPropertyTypeInfo = (type: string) => {
-    const typeMap: Record<string, { label: string; color: string; icon: any }> = {
+  // Define a custom type for the property information
+  type PropertyTypeInfo = {
+    label: string;
+    color: string;
+    icon: LucideIcon; // Use the specific type for the icon component
+  };
+
+  const getPropertyTypeInfo = (type: string): PropertyTypeInfo => {
+    // Define the type map using the new custom type
+    const typeMap: Record<string, PropertyTypeInfo> = {
       'HOTEL': { label: 'Urban Hotel', color: 'bg-blue-500', icon: Building },
       'RESORT': { label: 'Beach Resort', color: 'bg-emerald-500', icon: Waves },
       'VILLA_COMPLEX': { label: 'Villa Complex', color: 'bg-purple-500', icon: Building },
@@ -91,7 +100,7 @@ export function BusinessUnitsSection({ businessUnits = [] }: BusinessUnitsSectio
             return (
               <motion.div
                 key={property.id}
-                variants={cardVariants}
+            
                 whileHover={{ scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="group"

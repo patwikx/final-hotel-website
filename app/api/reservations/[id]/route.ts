@@ -1,5 +1,4 @@
-// app/api/reservations/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { ReservationStatus, PaymentStatus } from '@prisma/client';
@@ -21,10 +20,11 @@ const updateReservationSchema = z.object({
 /**
  * Handles GET requests for a single reservation.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const reservation = await prisma.reservation.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { guest: true, rooms: { include: { roomType: true } }, payments: true },
     });
     if (!reservation) {
@@ -40,9 +40,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update a reservation.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
+    const { id } = await params;
     const body = await req.json();
     const validation = updateReservationSchema.safeParse(body);
 
@@ -51,7 +52,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const updatedReservation = await prisma.reservation.update({
-      where: { id: params.id },
+      where: { id },
       data: validation.data,
     });
 
@@ -65,10 +66,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete a reservation.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check. In a real app, you might want to soft-delete or just cancel.
-    await prisma.reservation.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.reservation.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('[RESERVATION_DELETE]', error);

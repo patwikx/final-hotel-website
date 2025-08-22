@@ -1,5 +1,4 @@
-// app/api/rooms/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { RoomStatus, HousekeepingStatus } from '@prisma/client';
@@ -24,10 +23,11 @@ const updateRoomSchema = z.object({
 /**
  * Handles GET requests for a single room.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const room = await prisma.room.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { roomType: true },
     });
     if (!room) {
@@ -43,9 +43,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update a room.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
+    const { id } = await params;
     const body = await req.json();
     const validation = updateRoomSchema.safeParse(body);
 
@@ -54,7 +55,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const updatedRoom = await prisma.room.update({
-      where: { id: params.id },
+      where: { id },
       data: validation.data,
     });
 
@@ -68,10 +69,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete a room.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
-    await prisma.room.delete({ where: { id: params.id } });
+    const { id } = await params;
+    await prisma.room.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error('[ROOM_DELETE]', error);

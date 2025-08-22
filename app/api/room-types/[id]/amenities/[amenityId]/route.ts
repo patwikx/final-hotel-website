@@ -1,14 +1,13 @@
-// app/api/room-types/[id]/amenities/[amenityId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 /**
  * Handles DELETE requests to unlink an amenity from a room type.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string; amenityId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string; amenityId: string }> }) {
   try {
     // TODO: Add auth check
-    const { id: roomTypeId, amenityId } = params;
+    const { id: roomTypeId, amenityId } = await params;
 
     await prisma.roomTypeAmenity.delete({
       where: {

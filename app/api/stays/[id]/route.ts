@@ -1,15 +1,14 @@
-// app/api/stays/[id]/check-out/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ReservationStatus, RoomStatus, HousekeepingStatus } from '@prisma/client';
 
 /**
  * Handles POST requests to check-out a guest for a specific stay.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
-    const stayId = params.id;
+    const { id: stayId } = await params;
 
     const stay = await prisma.stay.findUnique({
       where: { id: stayId },

@@ -1,5 +1,4 @@
-// app/api/navigation/items/[itemId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -17,9 +16,10 @@ const updateNavigationItemSchema = z.object({
 /**
  * Handles PATCH requests to update a navigation item.
  */
-export async function PATCH(req: Request, { params }: { params: { itemId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ itemId: string }> }) {
     try {
         // TODO: Add auth check
+        const { itemId } = await params;
         const body = await req.json();
         const validation = updateNavigationItemSchema.safeParse(body);
 
@@ -28,7 +28,7 @@ export async function PATCH(req: Request, { params }: { params: { itemId: string
         }
 
         const updatedItem = await prisma.navigationItem.update({
-            where: { id: params.itemId },
+            where: { id: itemId },
             data: validation.data,
         });
 
@@ -42,10 +42,11 @@ export async function PATCH(req: Request, { params }: { params: { itemId: string
 /**
  * Handles DELETE requests to delete a navigation item.
  */
-export async function DELETE(req: Request, { params }: { params: { itemId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ itemId: string }> }) {
     try {
         // TODO: Add auth check
-        await prisma.navigationItem.delete({ where: { id: params.itemId } });
+        const { itemId } = await params;
+        await prisma.navigationItem.delete({ where: { id: itemId } });
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('[NAVIGATION_ITEM_DELETE]', error);

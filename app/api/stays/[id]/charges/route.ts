@@ -1,5 +1,4 @@
-// app/api/stays/[id]/charges/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -15,9 +14,9 @@ const createChargeSchema = z.object({
 /**
  * Handles GET requests to fetch all charges for a specific stay.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const stayId = params.id;
+        const { id: stayId } = await params;
         const charges = await prisma.charge.findMany({
             where: { stayId },
             orderBy: { chargedAt: 'asc' },
@@ -32,10 +31,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles POST requests to add a new charge to a stay's folio.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
-    const stayId = params.id;
+    const { id: stayId } = await params;
     const body = await req.json();
     const validation = createChargeSchema.safeParse(body);
 

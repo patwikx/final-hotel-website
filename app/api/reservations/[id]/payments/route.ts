@@ -1,5 +1,4 @@
-// app/api/reservations/[id]/payments/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { PaymentMethod, PaymentStatus } from '@prisma/client';
@@ -15,10 +14,10 @@ const createPaymentSchema = z.object({
 /**
  * Handles POST requests to record a new payment for a reservation.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
-    const reservationId = params.id;
+    const { id: reservationId } = await params;
     const body = await req.json();
     const validation = createPaymentSchema.safeParse(body);
 

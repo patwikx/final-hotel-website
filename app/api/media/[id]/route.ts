@@ -1,5 +1,4 @@
-// app/api/media/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { MediaCategory, ContentScope } from '@prisma/client';
@@ -19,9 +18,9 @@ const updateMediaItemSchema = z.object({
 /**
  * Handles GET requests to fetch a single media item by its ID.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const mediaItem = await prisma.mediaItem.findUnique({
       where: { id },
     });
@@ -40,10 +39,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update an existing media item's metadata.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add authentication and authorization check here.
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const validation = updateMediaItemSchema.safeParse(body);
@@ -66,10 +65,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete a media item.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add authentication and authorization check here.
-    const { id } = params;
+    const { id } = await params;
 
     const mediaItem = await prisma.mediaItem.findUnique({ where: { id } });
     if (!mediaItem) {

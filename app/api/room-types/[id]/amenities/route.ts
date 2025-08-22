@@ -1,5 +1,4 @@
-// app/api/room-types/[id]/amenities/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -10,10 +9,10 @@ const linkAmenitySchema = z.object({
 /**
  * Handles POST requests to link an amenity to a room type.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // TODO: Add auth check
-    const roomTypeId = params.id;
+    const { id: roomTypeId } = await params;
     const body = await req.json();
     const validation = linkAmenitySchema.safeParse(body);
 

@@ -1,5 +1,4 @@
-// app/api/navigation/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -14,10 +13,11 @@ const updateNavigationMenuSchema = z.object({
 /**
  * Handles GET requests to fetch a single navigation menu with its items.
  */
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const menu = await prisma.navigationMenu.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { items: { orderBy: { sortOrder: 'asc' } } },
     });
 
@@ -34,9 +34,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 /**
  * Handles PATCH requests to update a navigation menu.
  */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         // TODO: Add auth check
+        const { id } = await params;
         const body = await req.json();
         const validation = updateNavigationMenuSchema.safeParse(body);
 
@@ -47,14 +48,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         const { slug, ...data } = validation.data;
 
         if (slug) {
-            const existing = await prisma.navigationMenu.findFirst({ where: { slug, NOT: { id: params.id } } });
+            const existing = await prisma.navigationMenu.findFirst({ where: { slug, NOT: { id } } });
             if (existing) {
                 return new NextResponse('A menu with this slug already exists.', { status: 409 });
             }
         }
 
         const updatedMenu = await prisma.navigationMenu.update({
-            where: { id: params.id },
+            where: { id },
             data: { ...data, slug },
         });
 
@@ -69,10 +70,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 /**
  * Handles DELETE requests to delete a navigation menu.
  */
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         // TODO: Add auth check
-        await prisma.navigationMenu.delete({ where: { id: params.id } });
+        const { id } = await params;
+        await prisma.navigationMenu.delete({ where: { id } });
         return new NextResponse(null, { status: 204 });
     } catch (error) {
         console.error('[NAVIGATION_MENU_DELETE]', error);
