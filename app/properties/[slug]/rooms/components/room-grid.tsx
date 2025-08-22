@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Users, Bed, ArrowRight, Wifi, Coffee, Bath, Tv, Maximize, Eye } from "lucide-react"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { BusinessUnit, RoomType_Model, RoomRate } from "@prisma/client"
 
 interface RoomsGridProps {
@@ -16,6 +17,8 @@ interface RoomsGridProps {
 }
 
 export function RoomsGrid({ property, roomTypes }: RoomsGridProps) {
+  const router = useRouter();
+
   const getRoomTypeImage = (type: string) => {
     const imageMap: Record<string, string> = {
       'STANDARD': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
@@ -24,6 +27,16 @@ export function RoomsGrid({ property, roomTypes }: RoomsGridProps) {
       'VILLA': 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
     };
     return imageMap[type] || imageMap['STANDARD'];
+  };
+
+  const handleViewDetails = (roomTypeId: string) => {
+    router.push(`/properties/${property.slug}/rooms/${roomTypeId}`);
+  };
+
+  const handleBookRoom = (roomTypeId: string) => {
+    // You can either navigate to the room details page with a booking focus
+    // or scroll to a booking widget if it's on the same page
+    router.push(`/properties/${property.slug}/rooms/${roomTypeId}`);
   };
 
   const containerVariants = {
@@ -106,6 +119,7 @@ export function RoomsGrid({ property, roomTypes }: RoomsGridProps) {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => handleViewDetails(roomType.id)}
                       className="bg-white/20 backdrop-blur-md border-white/30 text-white hover:bg-white/30"
                     >
                       <Eye className="h-4 w-4 mr-2" />
@@ -189,6 +203,7 @@ export function RoomsGrid({ property, roomTypes }: RoomsGridProps) {
                     <div className="flex flex-col sm:flex-row gap-4 pt-4">
                       <Button 
                         size="lg"
+                        onClick={() => handleBookRoom(roomType.id)}
                         className="group/btn flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-4 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25"
                       >
                         <span>Book This Room</span>
@@ -198,6 +213,7 @@ export function RoomsGrid({ property, roomTypes }: RoomsGridProps) {
                       <Button 
                         size="lg"
                         variant="outline"
+                        onClick={() => handleViewDetails(roomType.id)}
                         className="group/btn flex-1 border-2 border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-700 hover:text-amber-700 font-semibold py-4 rounded-xl transition-all duration-300"
                       >
                         <Eye className="h-5 w-5 mr-2" />
