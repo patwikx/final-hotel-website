@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import { PublicHeader } from "@/components/homepage/public-header";
 import { PublicFooter } from "@/components/homepage/public-footer";
 import { prisma } from "@/lib/prisma";
