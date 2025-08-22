@@ -76,6 +76,7 @@ enum ReservationStatus {
   CANCELLED
   NO_SHOW
   WALKED_IN
+  PENDING
 }
 
 enum ReservationSource {
