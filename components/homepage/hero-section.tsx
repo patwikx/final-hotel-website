@@ -1,12 +1,11 @@
-// components/homepage/hero-section.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, Play, Calendar, MapPin, Users } from "lucide-react";
 import { BusinessUnit } from "@prisma/client";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface HeroSectionProps {
   featuredProperties: BusinessUnit[];
@@ -14,136 +13,310 @@ interface HeroSectionProps {
 
 export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
   useEffect(() => {
-    if (featuredProperties.length <= 1) return;
+    if (featuredProperties.length <= 1 || !isAutoPlaying) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % featuredProperties.length);
-    }, 7000); // 7-second interval
+    }, 6000);
+    
     return () => clearInterval(timer);
-  }, [featuredProperties.length]);
+  }, [featuredProperties.length, isAutoPlaying]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % featuredProperties.length);
+    setIsAutoPlaying(false);
   };
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + featuredProperties.length) % featuredProperties.length);
+    setIsAutoPlaying(false);
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+    setIsAutoPlaying(false);
   };
 
   if (featuredProperties.length === 0) {
     return (
-      <section className="h-screen bg-gray-800 flex items-center justify-center text-white">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold">Welcome to Tropicana</h1>
-          <p className="mt-2 text-lg">Experience Unforgettable Hospitality.</p>
-        </div>
+      <section className="relative h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmZmIiBzdG9wLW9wYWNpdHk9Ii4wNSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmZiIgc3RvcC1vcGFjaXR5PSIwIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9InVybCgjYSkiLz48L3N2Zz4=')] opacity-20"></div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="text-center text-white z-10"
+        >
+          <h1 className="text-6xl md:text-8xl font-bold mb-6 font-serif bg-gradient-to-r from-white via-amber-100 to-white bg-clip-text text-transparent">
+            Tropicana
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 text-slate-300">Experience Unforgettable Hospitality</p>
+          <div className="flex items-center justify-center gap-1 mb-8">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="h-6 w-6 fill-amber-400 text-amber-400" />
+            ))}
+          </div>
+        </motion.div>
       </section>
     );
   }
 
   return (
     <section className="relative h-screen overflow-hidden">
-      {/* Background Images with Gentle Crossfade */}
-      {featuredProperties.map((slide, index) => (
-        <div
-          key={slide.id}
-          className={`absolute inset-0 transition-opacity duration-[2000ms] ease-in-out ${
-            index === currentSlide ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: `url(${slide.heroImage || `https://placehold.co/1920x1080/334155/white?text=${encodeURIComponent(slide.displayName)}`})` }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/30 to-black/40" />
-        </div>
-      ))}
-
-      {/* Content - All Text Moves Together */}
-      <div className="relative h-full flex items-center justify-center">
+      {/* Background Images with Parallax Effect */}
+      <AnimatePresence mode="wait">
         {featuredProperties.map((slide, index) => (
-          <motion.div
-            key={slide.id}
-            className="absolute inset-0 flex items-center justify-center"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: index === currentSlide ? 0 : 20, opacity: index === currentSlide ? 1 : 0 }}
-            transition={{ duration: 1, ease: "easeInOut" }}
-          >
-            <div className="container mx-auto px-4 text-center text-white">
-              <h1 className="text-4xl md:text-7xl font-bold mb-6 font-serif">
-                {slide.displayName}
-              </h1>
-              {slide.shortDescription && (
-                <p className="text-lg md:text-2xl mb-8 max-w-2xl mx-auto leading-relaxed">
-                  {slide.shortDescription}
-                </p>
-              )}
-              <div className="flex items-center justify-center gap-1 mb-8">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                ))}
-                <span className="ml-2 text-sm">Luxury Hospitality Excellence</span>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button
-                  size="lg"
-                  asChild
-                  className="text-lg px-8 py-6 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  <Link href={`/properties/${slide.slug}`}>Explore Property</Link>
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-lg px-8 py-6 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-200"
-                >
-                  Book Your Stay
-                </Button>
-              </div>
-            </div>
-          </motion.div>
+          index === currentSlide && (
+            <motion.div
+              key={slide.id}
+              initial={{ scale: 1.1, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              className="absolute inset-0"
+            >
+              <div
+                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                style={{ 
+                  backgroundImage: `url(${slide.heroImage || `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`})` 
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
+            </motion.div>
+          )
         ))}
+      </AnimatePresence>
+
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ 
+            y: [0, -20, 0],
+            rotate: [0, 5, 0]
+          }}
+          transition={{ 
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-full backdrop-blur-sm"
+        />
+        <motion.div
+          animate={{ 
+            y: [0, 30, 0],
+            rotate: [0, -3, 0]
+          }}
+          transition={{ 
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2
+          }}
+          className="absolute bottom-32 left-16 w-24 h-24 bg-amber-400/10 rounded-full backdrop-blur-sm"
+        />
       </div>
 
-      {/* Navigation arrows */}
+      {/* Main Content */}
+      <div className="relative h-full flex items-center justify-center z-10">
+        <div className="container mx-auto px-6">
+          <AnimatePresence mode="wait">
+            {featuredProperties.map((slide, index) => (
+              index === currentSlide && (
+                <motion.div
+                  key={slide.id}
+                  initial={{ y: 50, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -30, opacity: 0 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="text-center text-white max-w-5xl mx-auto"
+                >
+                  {/* Property Badge */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.5 }}
+                    className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-6 py-3 mb-8 border border-white/20"
+                  >
+                    <MapPin className="h-4 w-4 text-amber-400" />
+                    <span className="text-sm font-medium">{slide.city}, {slide.country}</span>
+                  </motion.div>
+
+                  {/* Main Title */}
+                  <motion.h1
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 0.8 }}
+                    className="text-5xl md:text-8xl font-bold mb-6 font-serif leading-tight"
+                  >
+                    <span className="bg-gradient-to-r from-white via-amber-100 to-white bg-clip-text text-transparent">
+                      {slide.displayName}
+                    </span>
+                  </motion.h1>
+
+                  {/* Description */}
+                  {slide.shortDescription && (
+                    <motion.p
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.6, duration: 0.6 }}
+                      className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed text-slate-200"
+                    >
+                      {slide.shortDescription}
+                    </motion.p>
+                  )}
+
+                  {/* Rating */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.8, duration: 0.5 }}
+                    className="flex items-center justify-center gap-2 mb-10"
+                  >
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <span className="text-sm text-slate-300 ml-2">Luxury Hospitality Excellence</span>
+                  </motion.div>
+
+                  {/* Action Buttons */}
+                  <motion.div
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1, duration: 0.6 }}
+                    className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+                  >
+                    <Button
+                      size="lg"
+                      asChild
+                      className="group text-lg px-8 py-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 border-0 rounded-full"
+                    >
+                      <Link href={`/properties/${slide.slug}`} className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                        Book Your Stay
+                      </Link>
+                    </Button>
+                    
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      asChild
+                      className="group text-lg px-8 py-6 bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300 rounded-full"
+                    >
+                      <Link href={`/properties/${slide.slug}`} className="flex items-center gap-2">
+                        <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                        Virtual Tour
+                      </Link>
+                    </Button>
+                  </motion.div>
+
+                  {/* Quick Info */}
+                  <motion.div
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1.2, duration: 0.6 }}
+                    className="flex items-center justify-center gap-8 mt-12 text-sm text-slate-300"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-amber-400" />
+                      <span>Premium Service</span>
+                    </div>
+                    <div className="h-4 w-px bg-slate-400"></div>
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-amber-400" />
+                      <span>5-Star Luxury</span>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Navigation Controls */}
       {featuredProperties.length > 1 && (
         <>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 h-12 w-12 backdrop-blur-sm transition-all duration-200 z-10"
+          {/* Arrow Navigation */}
+          <motion.button
+            whileHover={{ scale: 1.1, x: -5 }}
+            whileTap={{ scale: 0.95 }}
             onClick={prevSlide}
+            className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20"
           >
             <ChevronLeft className="h-6 w-6" />
-          </Button>
+          </motion.button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 h-12 w-12 backdrop-blur-sm transition-all duration-200 z-10"
+          <motion.button
+            whileHover={{ scale: 1.1, x: 5 }}
+            whileTap={{ scale: 0.95 }}
             onClick={nextSlide}
+            className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20"
           >
             <ChevronRight className="h-6 w-6" />
-          </Button>
+          </motion.button>
 
-          {/* Slide indicators */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-10">
+          {/* Slide Indicators */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
             {featuredProperties.map((_, index) => (
-              <button
+              <motion.button
                 key={index}
-                className={`transition-all duration-300 rounded-full ${
+                whileHover={{ scale: 1.2 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => goToSlide(index)}
+                className={`relative transition-all duration-500 rounded-full ${
                   index === currentSlide
-                    ? "w-8 h-3 bg-white shadow-lg"
+                    ? "w-12 h-3 bg-white shadow-lg"
                     : "w-3 h-3 bg-white/50 hover:bg-white/70"
                 }`}
-                onClick={() => setCurrentSlide(index)}
                 aria-label={`Go to slide ${index + 1}`}
-              />
+              >
+                {index === currentSlide && (
+                  <motion.div
+                    layoutId="activeIndicator"
+                    className="absolute inset-0 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+              </motion.button>
             ))}
           </div>
+
+          {/* Auto-play Control */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsAutoPlaying(!isAutoPlaying)}
+            className="absolute bottom-8 right-8 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20"
+          >
+            {isAutoPlaying ? (
+              <div className="w-3 h-3 bg-current rounded-full animate-pulse" />
+            ) : (
+              <Play className="h-4 w-4 ml-0.5" />
+            )}
+          </motion.button>
         </>
       )}
+
+      {/* Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 2, duration: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/70 z-20"
+      >
+        <span className="text-xs font-medium tracking-wider uppercase">Scroll to explore</span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          className="w-px h-8 bg-gradient-to-b from-white/50 to-transparent"
+        />
+      </motion.div>
     </section>
   )
 }

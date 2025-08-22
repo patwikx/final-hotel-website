@@ -1,10 +1,9 @@
-// components/homepage/special-offers-section.tsx
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, ArrowRight, Percent, Tag } from "lucide-react"
+import { Calendar, ArrowRight, Percent, Clock, Gift, Sparkles } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { SpecialOffer } from "@prisma/client"
@@ -22,83 +21,224 @@ export function SpecialOffersSection({ specialOffers = [] }: SpecialOffersSectio
     return Math.round(savings)
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
-    <section className="py-24 bg-white relative overflow-hidden">
-      <div className="container mx-auto px-6 relative">
+    <section className="py-24 bg-gradient-to-br from-amber-50 via-white to-orange-50 relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmJmNWYwIiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmJmNWYwIiBzdG9wLW9wYWNpdHk9IjAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNhKSIvPjwvc3ZnPg==')] opacity-30"></div>
+      
+      {/* Floating Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          animate={{ 
+            y: [0, -20, 0],
+            rotate: [0, 5, 0]
+          }}
+          transition={{ 
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute top-20 right-20 w-32 h-32 bg-amber-200/20 rounded-full backdrop-blur-sm"
+        />
+        <motion.div
+          animate={{ 
+            y: [0, 30, 0],
+            rotate: [0, -3, 0]
+          }}
+          transition={{ 
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 3
+          }}
+          className="absolute bottom-32 left-16 w-24 h-24 bg-orange-200/20 rounded-full backdrop-blur-sm"
+        />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.8 }}
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <h2 className="text-4xl md:text-5xl font-bold font-serif text-slate-900 mb-4">
-            Special Offers & Packages
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+            <Sparkles className="h-4 w-4" />
+            Limited Time Offers
+          </div>
+          <h2 className="text-4xl md:text-6xl font-bold font-serif text-slate-900 mb-6 leading-tight">
+            Exclusive
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">
+              Packages
+            </span>
           </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Curated experiences and exclusive packages designed to create unforgettable moments.
+          <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            Discover our curated collection of special offers and exclusive packages designed to create unforgettable moments at exceptional value.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {specialOffers.map((offer, index) => {
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {specialOffers.map((offer) => {
             const savings = calculateSavings(Number(offer.originalPrice), Number(offer.offerPrice))
             return (
               <motion.div
                 key={offer.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -8 }}
+           
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="group"
               >
-                <Card className="overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 bg-white border border-slate-200 hover:border-slate-300 h-full flex flex-col">
-                  <div className="relative h-56 overflow-hidden">
-                    <img
-                      src={offer.featuredImage || `/placeholder.svg`}
+                <Card className="overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 bg-white border-0 relative h-full flex flex-col">
+                  {/* Image Container */}
+                  <div className="relative h-64 overflow-hidden">
+                    <motion.img
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.6 }}
+                      src={offer.featuredImage || `https://images.unsplash.com/photo-1571896349842-33c89424de2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`}
                       alt={offer.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    
+                    {/* Savings Badge */}
                     {savings && (
                       <div className="absolute top-4 right-4">
-                        <Badge className="bg-green-500 text-white font-bold border-0">
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold border-0 shadow-lg">
                           <Percent className="h-3 w-3 mr-1" />
                           Save {savings}%
                         </Badge>
                       </div>
                     )}
+
+                    {/* Offer Type */}
+                    <div className="absolute top-4 left-4">
+                      <Badge className="bg-white/90 backdrop-blur-sm text-slate-900 font-medium border-0">
+                        <Gift className="h-3 w-3 mr-1" />
+                        {offer.type.replace('_', ' ')}
+                      </Badge>
+                    </div>
+
+                    {/* Price Display */}
+                    <div className="absolute bottom-4 left-4 text-white">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold">₱{Number(offer.offerPrice).toLocaleString()}</span>
+                        {offer.originalPrice && (
+                          <span className="text-sm line-through text-white/70">₱{Number(offer.originalPrice).toLocaleString()}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-white/80">per night</span>
+                    </div>
                   </div>
-                  <CardContent className="p-6 flex flex-col flex-grow">
-                    <h3 className="text-xl font-bold text-slate-900 font-serif mb-2 group-hover:text-slate-700 transition-colors">
+
+                  <CardContent className="p-6 flex-1 flex flex-col">
+                    {/* Title */}
+                    <h3 className="text-xl font-bold text-slate-900 font-serif mb-3 group-hover:text-amber-700 transition-colors line-clamp-2">
                       {offer.title}
                     </h3>
-                    <p className="text-slate-600 text-sm mb-4 flex-grow">
+
+                    {/* Description */}
+                    <p className="text-slate-600 text-sm mb-4 flex-1 line-clamp-3 leading-relaxed">
                       {offer.shortDesc}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+
+                    {/* Offer Details */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center justify-between text-xs text-slate-500">
                         <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>Valid until {new Date(offer.validTo).toLocaleDateString()}</span>
+                          <Calendar className="h-3 w-3" />
+                          <span>Valid until {new Date(offer.validTo).toLocaleDateString()}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Tag className="h-3 w-3" />
-                            <span>{offer.type.replace('_', ' ')}</span>
+                        {offer.minNights && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{offer.minNights} nights min</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {offer.promoCode && (
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 border border-amber-200">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-600">Promo Code:</span>
+                            <Badge variant="outline" className="font-mono text-amber-700 border-amber-300">
+                              {offer.promoCode}
+                            </Badge>
+                          </div>
                         </div>
+                      )}
                     </div>
-                    <Button asChild className="w-full mt-auto">
-                      <Link href={`/offers/${offer.slug}`}>
-                        View Offer
-                        <ArrowRight className="h-4 w-4 ml-2" />
+
+                    {/* CTA Button */}
+                    <Button 
+                      asChild 
+                      className="group/btn w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25 mt-auto"
+                    >
+                      <Link href={`/offers/${offer.slug}`} className="flex items-center justify-center gap-2">
+                        <span>View Offer</span>
+                        <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
                       </Link>
                     </Button>
                   </CardContent>
+
+                  {/* Hover Effect Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 </Card>
               </motion.div>
             )
           })}
-        </div>
+        </motion.div>
+
+        {/* View All Offers CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="text-center mt-16"
+        >
+          <Button 
+            asChild
+            size="lg"
+            className="group bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-amber-500/25 transition-all duration-300"
+          >
+            <Link href="/offers" className="flex items-center gap-2">
+              <Gift className="h-5 w-5" />
+              View All Offers
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
+        </motion.div>
       </div>
     </section>
   )
