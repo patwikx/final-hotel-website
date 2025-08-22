@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, ArrowRight, Building, Star, Wifi, Car, Utensils, Waves } from "lucide-react"
+import { MapPin, ArrowRight, Building, Star, Wifi, Car, Utensils, Waves, Users, Calendar, Phone } from "lucide-react"
 import { motion } from "framer-motion"
 import { BusinessUnit } from "@prisma/client"
 import Link from "next/link"
@@ -31,25 +31,25 @@ export function BusinessUnitsSection({ businessUnits = [] }: BusinessUnitsSectio
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.2
+        staggerChildren: 0.15
       }
     }
   };
 
   const cardVariants = {
-    hidden: { opacity: 0, y: 50 },
+    hidden: { opacity: 0, y: 30 },
     visible: { 
       opacity: 1, 
       y: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.5,
         ease: "easeOut"
       }
     }
   };
 
   return (
-    <section id="properties" className="py-24 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
+    <section id="properties" className="py-20 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjFmNWY5IiBzdG9wLW9wYWNpdHk9Ii4xIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZjFmNWY5IiBzdG9wLW9wYWNpdHk9IjAiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNhKSIvPjwvc3ZnPg==')] opacity-50"></div>
       
@@ -59,7 +59,7 @@ export function BusinessUnitsSection({ businessUnits = [] }: BusinessUnitsSectio
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center mb-20"
+          className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Star className="h-4 w-4" />
@@ -72,7 +72,7 @@ export function BusinessUnitsSection({ businessUnits = [] }: BusinessUnitsSectio
             </span>
           </h2>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            Discover our collection of world-class properties, each offering unique experiences and unparalleled hospitality in breathtaking locations.
+            Discover our collection of world-class properties, each offering unique experiences and unparalleled hospitality.
           </p>
         </motion.div>
 
@@ -81,97 +81,161 @@ export function BusinessUnitsSection({ businessUnits = [] }: BusinessUnitsSectio
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="space-y-8"
         >
-          {businessUnits.map((property) => {
+          {businessUnits.map((property, index) => {
             const typeInfo = getPropertyTypeInfo(property.propertyType);
             const IconComponent = typeInfo.icon;
+            const isEven = index % 2 === 0;
             
             return (
               <motion.div
                 key={property.id}
-            
-                whileHover={{ y: -12, scale: 1.02 }}
+                variants={cardVariants}
+                whileHover={{ scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 className="group"
               >
-                <Card className="overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 bg-white border-0 relative h-full flex flex-col">
-                  {/* Image Container */}
-                  <div className="relative h-80 overflow-hidden">
-                    <motion.img
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.6 }}
-                      src={property.heroImage || `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`}
-                      alt={property.displayName}
-                      className="w-full h-full object-cover"
-                    />
-                    
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    
-                    {/* Property Type Badge */}
-                    <div className="absolute top-4 left-4">
-                      <Badge className={`${typeInfo.color} text-white font-medium border-0 shadow-lg`}>
-                        <IconComponent className="h-3 w-3 mr-1.5" />
-                        {typeInfo.label}
-                      </Badge>
+                <Card className="overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-700 bg-white border-0 relative">
+                  <div className={`grid lg:grid-cols-2 gap-0 ${!isEven ? 'lg:grid-flow-col-dense' : ''}`}>
+                    {/* Image Section */}
+                    <div className={`relative h-96 lg:h-[500px] overflow-hidden ${!isEven ? 'lg:col-start-2' : ''}`}>
+                      <motion.img
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.7 }}
+                        src={property.heroImage || `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80`}
+                        alt={property.displayName}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                      
+                      {/* Property Type Badge */}
+                      <div className="absolute top-6 left-6">
+                        <Badge className={`${typeInfo.color} text-white font-medium border-0 shadow-lg px-4 py-2`}>
+                          <IconComponent className="h-4 w-4 mr-2" />
+                          {typeInfo.label}
+                        </Badge>
+                      </div>
+
+                      {/* Rating Badge */}
+                      <div className="absolute top-6 right-6 bg-white/95 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 shadow-lg">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="text-sm font-bold text-slate-900">5.0</span>
+                      </div>
+
+                      {/* Location Overlay */}
+                      <div className="absolute bottom-6 left-6 flex items-center gap-2 text-white">
+                        <div className="bg-black/30 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          <span className="text-sm font-medium">{property.city}, {property.country}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Rating Badge */}
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      <span className="text-xs font-semibold text-slate-900">5.0</span>
-                    </div>
+                    {/* Content Section */}
+                    <div className={`p-8 lg:p-12 flex flex-col justify-center ${!isEven ? 'lg:col-start-1' : ''}`}>
+                      <div className="space-y-6">
+                        {/* Title */}
+                        <div>
+                          <h3 className="text-3xl lg:text-4xl font-bold text-slate-900 font-serif mb-4 group-hover:text-amber-700 transition-colors leading-tight">
+                            {property.displayName}
+                          </h3>
+                          <p className="text-slate-600 text-lg leading-relaxed">
+                            {property.shortDescription}
+                          </p>
+                        </div>
 
-                    {/* Location */}
-                    <div className="absolute bottom-4 left-4 flex items-center gap-2 text-white">
-                      <MapPin className="h-4 w-4" />
-                      <span className="text-sm font-medium">{property.city}, {property.country}</span>
+                        {/* Features Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl group-hover:bg-amber-50 transition-colors">
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <Wifi className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 text-sm">Free WiFi</div>
+                              <div className="text-xs text-slate-500">High-speed internet</div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl group-hover:bg-amber-50 transition-colors">
+                            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                              <Car className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 text-sm">Parking</div>
+                              <div className="text-xs text-slate-500">Complimentary valet</div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl group-hover:bg-amber-50 transition-colors">
+                            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                              <Utensils className="h-5 w-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 text-sm">Fine Dining</div>
+                              <div className="text-xs text-slate-500">Award-winning cuisine</div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl group-hover:bg-amber-50 transition-colors">
+                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                              <Users className="h-5 w-5 text-amber-600" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-slate-900 text-sm">Concierge</div>
+                              <div className="text-xs text-slate-500">24/7 service</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Contact Info */}
+                        <div className="flex items-center gap-6 pt-4 border-t border-slate-100">
+                          {property.phone && (
+                            <div className="flex items-center gap-2 text-slate-600">
+                              <Phone className="h-4 w-4" />
+                              <span className="text-sm font-medium">{property.phone}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <Calendar className="h-4 w-4" />
+                            <span className="text-sm font-medium">Available year-round</span>
+                          </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4 pt-2">
+                          <Button 
+                            asChild
+                            size="lg"
+                            className="group/btn flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-4 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25"
+                          >
+                            <Link href={`/properties/${property.slug}`} className="flex items-center justify-center gap-2">
+                              <Calendar className="h-5 w-5" />
+                              <span>Book Now</span>
+                              <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                            </Link>
+                          </Button>
+                          
+                          <Button 
+                            asChild
+                            size="lg"
+                            variant="outline"
+                            className="group/btn flex-1 border-2 border-slate-200 hover:border-amber-300 hover:bg-amber-50 text-slate-700 hover:text-amber-700 font-semibold py-4 rounded-xl transition-all duration-300"
+                          >
+                            <Link href={`/properties/${property.slug}`} className="flex items-center justify-center gap-2">
+                              <Building className="h-5 w-5" />
+                              <span>Explore Property</span>
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <CardContent className="p-6 flex-1 flex flex-col">
-                    {/* Title */}
-                    <h3 className="text-2xl font-bold text-slate-900 font-serif mb-3 group-hover:text-amber-700 transition-colors">
-                      {property.displayName}
-                    </h3>
-
-                    {/* Description */}
-                    <p className="text-slate-600 mb-6 text-sm leading-relaxed line-clamp-3 flex-1">
-                      {property.shortDescription}
-                    </p>
-
-                    {/* Amenities Icons */}
-                    <div className="flex items-center gap-4 mb-6 text-slate-400">
-                      <div className="flex items-center gap-1">
-                        <Wifi className="h-4 w-4" />
-                        <span className="text-xs">WiFi</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Car className="h-4 w-4" />
-                        <span className="text-xs">Parking</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Utensils className="h-4 w-4" />
-                        <span className="text-xs">Dining</span>
-                      </div>
-                    </div>
-
-                    {/* CTA Button */}
-                    <Button 
-                      asChild
-                      className="group/btn w-full bg-gradient-to-r from-slate-900 to-slate-800 hover:from-amber-600 hover:to-amber-700 text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/25 mt-auto"
-                      size="lg"
-                    >
-                      <Link href={`/properties/${property.slug}`} className="flex items-center justify-center gap-2">
-                        <span>Explore Property</span>
-                        <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
-                      </Link>
-                    </Button>
-                  </CardContent>
-
                   {/* Hover Effect Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                 </Card>
               </motion.div>
             );

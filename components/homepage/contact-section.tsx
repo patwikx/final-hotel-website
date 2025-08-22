@@ -131,33 +131,15 @@ export function ContactSection({ websiteConfig }: ContactSectionProps) {
             <MessageCircle className="h-4 w-4" />
             Get In Touch
           </div>
-          <h2 className="text-5xl md:text-6xl font-bold font-serif text-white mb-6 tracking-tight leading-tight">
+          <h2 className="text-4xl md:text-5xl font-bold font-serif text-white mb-6 tracking-tight leading-tight">
             Connect With
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
               Excellence
             </span>
           </h2>
-          <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-8">
+          <p className="text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed mb-8">
             Our dedicated concierge team is available around the clock to ensure your experience exceeds expectations. Reach out to us anytime.
           </p>
-          
-          {/* Trust Indicators */}
-          <div className="flex items-center justify-center gap-8 text-slate-400">
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-amber-400" />
-              <span className="text-sm font-medium">24/7 Response</span>
-            </div>
-            <div className="h-4 w-px bg-slate-600"></div>
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-green-400" />
-              <span className="text-sm font-medium">Secure Communication</span>
-            </div>
-            <div className="h-4 w-px bg-slate-600"></div>
-            <div className="flex items-center gap-2">
-              <Headphones className="h-5 w-5 text-blue-400" />
-              <span className="text-sm font-medium">Expert Support</span>
-            </div>
-          </div>
         </motion.div>
 
         <motion.div 
@@ -165,7 +147,7 @@ export function ContactSection({ websiteConfig }: ContactSectionProps) {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
           {Object.entries(groupedContacts).map(([type, contactList]) => (
             <motion.div
@@ -174,53 +156,53 @@ export function ContactSection({ websiteConfig }: ContactSectionProps) {
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="group"
             >
-              <Card className="h-full bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all duration-500 hover:bg-white/10 relative overflow-hidden">
+              <Card className="h-full bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/20 transition-all duration-300 relative overflow-hidden">
                 {/* Gradient Background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
-                <CardContent className="p-8 relative z-10">
+                <CardContent className="p-6 relative z-10">
                   <div className="text-center">
-                    <div className="mb-6">
-                      <div className="w-20 h-20 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-2xl flex items-center justify-center mx-auto group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg shadow-amber-500/10">
+                    <div className="mb-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-xl flex items-center justify-center mx-auto group-hover:scale-110 transition-all duration-300">
                         {contactList.map((contact) => {
                           const IconComponent = iconMap[contact.iconName] || Phone;
-                          return <IconComponent key={contact.value} className="w-10 h-10 text-amber-400" />;
+                          return <IconComponent key={contact.value} className="w-6 h-6 text-amber-400" />;
                         })}
                       </div>
                     </div>
                     
-                    <h3 className="text-2xl font-bold text-white mb-8 capitalize group-hover:text-amber-400 transition-colors font-serif">
+                    <h3 className="text-lg font-bold text-white mb-4 capitalize group-hover:text-amber-400 transition-colors">
                       {type.toLowerCase().replace("_", " ")}
                     </h3>
                     
-                    <div className="space-y-6">
+                    <div className="space-y-3">
                       {contactList.map((contact) => {
                         const href = formatContactValue(contact);
                         const isLink = isClickable(contact.type);
 
                         return (
-                          <div key={contact.value} className="text-center">
-                            <div className="text-base font-bold text-slate-300 mb-3">{contact.label}</div>
+                          <div key={contact.value}>
+                            <div className="text-sm font-medium text-slate-300 mb-1">{contact.label}</div>
                             {isLink ? (
                               <Button
                                 variant="link"
-                                className="h-auto p-0 text-slate-400 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-amber-400 hover:to-orange-400 font-medium text-base"
+                                className="h-auto p-0 text-slate-400 hover:text-amber-400 font-medium text-sm"
                                 asChild
                               >
                                 <a
                                   href={href}
                                   target={contact.type === "ADDRESS" ? "_blank" : undefined}
                                   rel={contact.type === "ADDRESS" ? "noopener noreferrer" : undefined}
-                                  className="flex items-center justify-center gap-2 group/link"
+                                  className="flex items-center gap-1 group/link"
                                 >
                                   <span>{contact.value}</span>
                                   {contact.type === "ADDRESS" && (
-                                    <ExternalLink className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
+                                    <ExternalLink className="w-3 h-3" />
                                   )}
                                 </a>
                               </Button>
                             ) : (
-                              <div className="text-base text-slate-400 font-medium">{contact.value}</div>
+                              <div className="text-sm text-slate-400">{contact.value}</div>
                             )}
                           </div>
                         )
@@ -234,35 +216,15 @@ export function ContactSection({ websiteConfig }: ContactSectionProps) {
         </motion.div>
 
         {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 backdrop-blur-xl rounded-2xl border border-amber-500/20 p-8 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold text-white mb-4 font-serif">Ready to Experience Luxury?</h3>
-            <p className="text-slate-300 mb-6">Let our concierge team help you plan the perfect stay at any of our world-class properties.</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg"
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg hover:shadow-amber-500/25 transition-all duration-300"
-              >
-                <Calendar className="h-5 w-5 mr-2" />
-                Book Your Stay
-              </Button>
-              <Button 
-                size="lg"
-                variant="outline"
-                className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:border-white/30 transition-all duration-300"
-              >
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Live Chat
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+        <div className="text-center">
+          <Button 
+            size="lg"
+            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+          >
+            <Calendar className="h-5 w-5 mr-2" />
+            Book Your Stay
+          </Button>
+        </div>
       </div>
     </section>
   )
