@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { Guest, Reservation } from "@prisma/client"
+import { getGuestById } from "@/services/guest-services"
 
 
 interface GuestDetailPageProps {
@@ -46,12 +47,18 @@ export default function GuestDetailPage({ params }: GuestDetailPageProps) {
     const loadGuest = async () => {
       try {
         const { id } = await params
-        const response = await fetch(`/api/guests/${id}`)
-        if (!response.ok) {
-          throw new Error('Failed to fetch guest')
+        const guestData = await getGuestById(id)
+        
+        // Fetch reservations separately
+        const reservationsResponse = await fetch(`/api/guests/${id}/reservations`)
+        const reservations = reservationsResponse.ok ? await reservationsResponse.json() : []
+        
+        const guestWithReservations: GuestWithReservations = {
+          ...guestData,
+          reservations
         }
-        const guestData: GuestWithReservations = await response.json()
-        setGuest(guestData)
+        
+        setGuest(guestWithReservations)
       } catch (error) {
         console.error('Failed to load guest:', error)
         router.push('/admin/guests')

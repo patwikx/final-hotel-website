@@ -58,7 +58,7 @@ export const createReservation = async (data: CreateReservationData): Promise<Re
  */
 export const updateReservation = async (id: string, data: UpdateReservationData): Promise<Reservation> => {
   try {
-    const response = await apiClient.patch<Reservation>(`/reservations/${id}`, data);
+    const response = await apiClient.patch<Reservation>(`/reservations/${id}/edit`, data);
     return response.data;
   } catch (error) {
     console.error(`Failed to update reservation ${id}:`, error);

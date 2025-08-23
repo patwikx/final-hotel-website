@@ -1,68 +1,101 @@
-import { NextResponse, NextRequest } from 'next/server';
+// app/api/users/route.ts
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma'; // Assuming you have this singleton instance
 import { z } from 'zod';
+import { UserStatus } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
-const updateFAQSchema = z.object({
-  question: z.string().min(1).optional(),
-  answer: z.string().min(1).optional(),
-  // FIX: Removed .nullable() to match the non-nullable Prisma schema field
-  category: z.string().optional(),
-  isActive: z.boolean().optional(),
-  sortOrder: z.number().int().optional(),
+const createUserSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(1),
+  password: z.string().min(6),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  status: z.nativeEnum(UserStatus).optional(),
+  phone: z.string().optional().nullable(),
+  avatar: z.string().optional().nullable(),
+  // FIX: Removed nullable() to match the non-nullable Prisma schema fields
+  timezone: z.string().optional(),
+  locale: z.string().optional(),
+  createdBy: z.string().uuid().optional().nullable(),
 });
 
 /**
- * Handles GET requests for a single FAQ.
+ * Handles GET requests to fetch all users.
  */
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request) {
   try {
-    const { id } = await params;
-    const faq = await prisma.fAQ.findUnique({ where: { id } });
-    if (!faq) {
-      return new NextResponse('FAQ not found', { status: 404 });
-    }
-    return NextResponse.json(faq, { status: 200 });
+    const usersData = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        // FIX: Changed 'businessUnitRoles' to 'assignments' to match the schema
+        assignments: {
+          include: {
+            businessUnit: { select: { displayName: true } },
+            role: { select: { displayName: true } }
+          }
+        }
+      }
+    });
+
+    // Remove password hash from all user objects in the response
+    const users = usersData.map(user => {
+        const { passwordHash, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+    });
+
+    return NextResponse.json(users, { status: 200 });
   } catch (error) {
-    console.error('[FAQ_GET]', error);
+    console.error('[USERS_GET]', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
 /**
- * Handles PATCH requests to update a FAQ.
+ * Handles POST requests to create a new user.
  */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: Request) {
   try {
-    const { id } = await params;
     const body = await req.json();
-    const validation = updateFAQSchema.safeParse(body);
+    const validation = createUserSchema.safeParse(body);
 
     if (!validation.success) {
       return new NextResponse(JSON.stringify({ error: "Invalid input", details: validation.error.flatten().fieldErrors }), { status: 400 });
     }
 
-    const updatedFAQ = await prisma.fAQ.update({
-      where: { id },
-      data: validation.data,
+    const { password, email, username, ...userData } = validation.data;
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { username }
+        ]
+      }
     });
 
-    return NextResponse.json(updatedFAQ, { status: 200 });
-  } catch (error) {
-    console.error('[FAQ_PATCH]', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
+    if (existingUser) {
+      return new NextResponse('User with this email or username already exists.', { status: 409 });
+    }
 
-/**
- * Handles DELETE requests to delete a FAQ.
- */
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    await prisma.fAQ.delete({ where: { id } });
-    return new NextResponse(null, { status: 204 });
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        ...userData,
+        email,
+        username,
+        passwordHash,
+      },
+    });
+
+    // Remove password hash from response
+    const { passwordHash: _, ...userResponse } = newUser;
+    return NextResponse.json(userResponse, { status: 201 });
   } catch (error) {
-    console.error('[FAQ_DELETE]', error);
+    console.error('[USERS_POST]', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

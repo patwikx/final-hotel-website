@@ -17,7 +17,6 @@ import {
   Mail,
   MapPin,
   CheckCircle,
-  Clock,
   Edit,
   Receipt,
   MessageSquare
@@ -25,6 +24,7 @@ import {
 import Link from "next/link"
 import { Reservation, Guest, Room, RoomType_Model, Payment } from "@prisma/client"
 import { Label } from "@/components/ui/label"
+import { getReservationById } from "@/services/reservation-services"
 
 interface ReservationDetailPageProps {
   params: Promise<{ id: string }>
@@ -43,10 +43,9 @@ export default function ReservationDetailPage({ params }: ReservationDetailPageP
   useEffect(() => {
     const loadReservation = async () => {
       try {
-        // In real app, fetch reservation by ID
-        // const { id } = await params
-        // const reservationData = await getReservationById(id)
-        // setReservation(reservationData)
+        const { id } = await params
+        const reservationData = await getReservationById(id) as ReservationWithDetails
+        setReservation(reservationData)
       } catch (error) {
         console.error('Failed to load reservation:', error)
         router.push('/admin/reservations')

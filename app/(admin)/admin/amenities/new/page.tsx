@@ -10,244 +10,250 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { 
-  Save, 
-  ArrowLeft, 
-  Shield, 
-  Settings,
-  DollarSign
+  Save, 
+  ArrowLeft, 
+  Shield, 
+  Settings,
+  DollarSign
 } from "lucide-react"
 import Link from "next/link"
 import { createAmenity } from "@/services/amenity-services"
+import { Prisma } from "@prisma/client" // <-- Added this import
 
 export default function NewAmenityPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    businessUnitId: "",
-    name: "",
-    description: "",
-    category: "",
-    icon: "",
-    isActive: true,
-    isChargeable: false,
-    chargeAmount: 0,
-    sortOrder: 0
-  })
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    businessUnitId: "",
+    name: "",
+    description: "",
+    category: "",
+    icon: "",
+    isActive: true,
+    isChargeable: false,
+    chargeAmount: 0,
+    sortOrder: 0
+  })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    try {
-      await createAmenity({
-        ...formData,
-        chargeAmount: formData.isChargeable ? formData.chargeAmount : null
-      })
-      router.push('/admin/amenities')
-    } catch (error) {
-      console.error('Failed to create amenity:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    
+    try {
+      const payload = {
+        ...formData,
+        // FIX: Convert the number to a Prisma.Decimal instance
+        chargeAmount: formData.isChargeable ? new Prisma.Decimal(formData.chargeAmount) : null
+      }
+      await createAmenity(payload)
+      router.push('/admin/amenities')
+    } catch (error) {
+      console.error('Failed to create amenity:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/amenities">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Amenities
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Add New Amenity</h1>
-            <p className="text-slate-600 mt-1">Create a new amenity for your properties</p>
-          </div>
-        </div>
-        
-        <Button 
-          onClick={handleSubmit}
-          disabled={isLoading}
-          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
-        >
-          {isLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Creating...
-            </div>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              Create Amenity
-            </>
-          )}
-        </Button>
-      </div>
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+<Button variant="outline" asChild>
+  <Link href="/admin/amenities">
+    {/* Correct: Wrap icon and text in a single element */}
+    <span className="flex items-center">
+      <ArrowLeft className="h-4 w-4 mr-2" />
+      Back to Amenities
+    </span>
+  </Link>
+</Button>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 font-serif">Add New Amenity</h1>
+            <p className="text-slate-600 mt-1">Create a new amenity for your properties</p>
+          </div>
+        </div>
+        
+        <Button 
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Creating...
+            </div>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Create Amenity
+            </>
+          )}
+        </Button>
+      </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-amber-600" />
-                  Amenity Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
-                    Amenity Name *
-                  </Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., High-Speed WiFi"
-                    className="h-12"
-                    required
-                  />
-                </div>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-amber-600" />
+                  Amenity Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
+                    Amenity Name *
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g., High-Speed WiFi"
+                    className="h-12"
+                    required
+                  />
+                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-semibold text-slate-700">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Detailed description of the amenity..."
-                    className="h-24"
-                  />
-                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-sm font-semibold text-slate-700">
+                    Description
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Detailed description of the amenity..."
+                    className="h-24"
+                  />
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="category" className="text-sm font-semibold text-slate-700">
-                      Category
-                    </Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Technology">Technology</SelectItem>
-                        <SelectItem value="Services">Services</SelectItem>
-                        <SelectItem value="Dining">Dining</SelectItem>
-                        <SelectItem value="Wellness">Wellness</SelectItem>
-                        <SelectItem value="Entertainment">Entertainment</SelectItem>
-                        <SelectItem value="In-Room">In-Room</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="category" className="text-sm font-semibold text-slate-700">
+                      Category
+                    </Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Technology">Technology</SelectItem>
+                        <SelectItem value="Services">Services</SelectItem>
+                        <SelectItem value="Dining">Dining</SelectItem>
+                        <SelectItem value="Wellness">Wellness</SelectItem>
+                        <SelectItem value="Entertainment">Entertainment</SelectItem>
+                        <SelectItem value="In-Room">In-Room</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="icon" className="text-sm font-semibold text-slate-700">
-                      Icon
-                    </Label>
-                    <Select value={formData.icon} onValueChange={(value) => setFormData(prev => ({ ...prev, icon: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select icon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="wifi">WiFi</SelectItem>
-                        <SelectItem value="car">Parking</SelectItem>
-                        <SelectItem value="utensils">Dining</SelectItem>
-                        <SelectItem value="dumbbell">Fitness</SelectItem>
-                        <SelectItem value="waves">Spa</SelectItem>
-                        <SelectItem value="shield">Security</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="icon" className="text-sm font-semibold text-slate-700">
+                      Icon
+                    </Label>
+                    <Select value={formData.icon} onValueChange={(value) => setFormData(prev => ({ ...prev, icon: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select icon" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="wifi">WiFi</SelectItem>
+                        <SelectItem value="car">Parking</SelectItem>
+                        <SelectItem value="utensils">Dining</SelectItem>
+                        <SelectItem value="dumbbell">Fitness</SelectItem>
+                        <SelectItem value="waves">Spa</SelectItem>
+                        <SelectItem value="shield">Security</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Settings Sidebar */}
-          <div className="space-y-6">
-            {/* Status Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Settings className="h-5 w-5 text-amber-600" />
-                  Settings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Property</Label>
-                  <Select value={formData.businessUnitId} onValueChange={(value) => setFormData(prev => ({ ...prev, businessUnitId: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select property" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="property1">Tropicana Manila</SelectItem>
-                      <SelectItem value="property2">Tropicana Cebu</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* Settings Sidebar */}
+          <div className="space-y-6">
+            {/* Status Settings */}
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Settings className="h-5 w-5 text-amber-600" />
+                  Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Property</Label>
+                  <Select value={formData.businessUnitId} onValueChange={(value) => setFormData(prev => ({ ...prev, businessUnitId: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select property" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="property1">Tropicana Manila</SelectItem>
+                      <SelectItem value="property2">Tropicana Cebu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Active</Label>
-                    <p className="text-xs text-slate-500">Available to guests</p>
-                  </div>
-                  <Switch 
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Chargeable</Label>
-                    <p className="text-xs text-slate-500">Requires payment</p>
-                  </div>
-                  <Switch 
-                    checked={formData.isChargeable}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isChargeable: checked }))}
-                  />
-                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold text-slate-700">Active</Label>
+                    <p className="text-xs text-slate-500">Available to guests</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isActive}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold text-slate-700">Chargeable</Label>
+                    <p className="text-xs text-slate-500">Requires payment</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isChargeable}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isChargeable: checked }))}
+                  />
+                </div>
 
-                {formData.isChargeable && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-slate-700">Charge Amount</Label>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-slate-400" />
-                      <Input
-                        type="number"
-                        value={formData.chargeAmount}
-                        onChange={(e) => setFormData(prev => ({ ...prev, chargeAmount: parseFloat(e.target.value) || 0 }))}
-                        placeholder="0.00"
-                        className="flex-1"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                  </div>
-                )}
+                {formData.isChargeable && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-slate-700">Charge Amount</Label>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-slate-400" />
+                      <Input
+                        type="number"
+                        value={formData.chargeAmount}
+                        onChange={(e) => setFormData(prev => ({ ...prev, chargeAmount: parseFloat(e.target.value) || 0 }))}
+                        placeholder="0.00"
+                        className="flex-1"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Sort Order</Label>
-                  <Input
-                    type="number"
-                    value={formData.sortOrder}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </form>
-    </div>
-  )
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Sort Order</Label>
+                  <Input
+                    type="number"
+                    value={formData.sortOrder}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </form>
+    </div>
+  )
 }

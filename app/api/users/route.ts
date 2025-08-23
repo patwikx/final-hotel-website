@@ -1,110 +1,100 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma'; // Assuming you have this singleton instance
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { UserStatus } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-const updateUserSchema = z.object({
-  email: z.string().email().optional(),
-  username: z.string().min(1).optional(),
-  firstName: z.string().min(1).optional(),
-  lastName: z.string().min(1).optional(),
-  status: z.nativeEnum(UserStatus).optional(),
+// Schema for creating a new user (most fields are required)
+const createUserSchema = z.object({
+  email: z.string().email('Invalid email format.'),
+  username: z.string().min(1, 'Username is required.'),
+  password: z.string().min(6, 'Password must be at least 6 characters long.'),
+  firstName: z.string().min(1, 'First name is required.'),
+  lastName: z.string().min(1, 'Last name is required.'),
   phone: z.string().optional().nullable(),
   avatar: z.string().optional().nullable(),
-  // FIX: Removed .nullable() to match the non-nullable Prisma schema fields
+  status: z.nativeEnum(UserStatus).optional(),
   timezone: z.string().optional(),
   locale: z.string().optional(),
 });
 
 /**
- * Handles GET requests for a single user.
+ * Handles GET requests to fetch all users.
  */
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET() {
   try {
-    const { id } = await params;
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        status: true,
+        phone: true,
+        avatar: true,
+        timezone: true,
+        locale: true,
+        createdAt: true,
+        updatedAt: true,
         assignments: {
           include: {
             businessUnit: { select: { displayName: true } },
             role: { select: { displayName: true } }
           }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' },
     });
-    if (!user) {
-      return new NextResponse('User not found', { status: 404 });
-    }
-    
-    const { passwordHash, ...userResponse } = user;
-    return NextResponse.json(userResponse, { status: 200 });
+    return NextResponse.json(users, { status: 200 });
   } catch (error) {
-    console.error('[USER_GET]', error);
+    console.error('[USERS_GET]', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
 
 /**
- * Handles PATCH requests to update a user.
+ * Handles POST requests to create a new user.
  */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest) {
   try {
-    const { id } = await params;
     const body = await req.json();
-    const validation = updateUserSchema.safeParse(body);
+    const validation = createUserSchema.safeParse(body);
 
     if (!validation.success) {
-      return new NextResponse(JSON.stringify({ error: "Invalid input", details: validation.error.flatten().fieldErrors }), { status: 400 });
+      return new NextResponse(
+        JSON.stringify({ error: 'Invalid input', details: validation.error.flatten().fieldErrors }),
+        { status: 400 }
+      );
     }
 
-    const { email, username } = validation.data;
+    const { password, ...userData } = validation.data;
+    const passwordHash = await bcrypt.hash(password, 10);
 
-    if (email || username) {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          AND: [
-            { NOT: { id } },
-            {
-              OR: [
-                ...(email ? [{ email }] : []),
-                ...(username ? [{ username }] : [])
-              ]
-            }
-          ]
-        }
-      });
-
-      if (existingUser) {
-        return new NextResponse('User with this email or username already exists.', { status: 409 });
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: userData.email },
+          { username: userData.username }
+        ]
       }
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      // FIX: The validated data can now be passed directly, as the Zod schema
-      // no longer produces `null` for non-nullable fields.
-      data: validation.data,
     });
 
-    const { passwordHash, ...userResponse } = updatedUser;
-    return NextResponse.json(userResponse, { status: 200 });
-  } catch (error) {
-    console.error('[USER_PATCH]', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
-  }
-}
+    if (existingUser) {
+      return new NextResponse('User with this email or username already exists.', { status: 409 });
+    }
 
-/**
- * Handles DELETE requests to delete a user.
- */
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    await prisma.user.delete({ where: { id } });
-    return new NextResponse(null, { status: 204 });
+    const newUser = await prisma.user.create({
+      data: {
+        ...userData,
+        passwordHash,
+      },
+    });
+
+    const { passwordHash: newUserPasswordHash, ...userResponse } = newUser;
+    return NextResponse.json(userResponse, { status: 201 });
   } catch (error) {
-    console.error('[USER_DELETE]', error);
+    console.error('[USERS_POST]', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

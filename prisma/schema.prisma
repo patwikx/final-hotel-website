@@ -544,6 +544,10 @@ model WebsiteConfiguration {
   enableMultilingual Boolean  @default(false)
   availableLocales   String[] // ["en", "fil", "zh"]
 
+  // NEW: Date & Time Formatting
+  dateFormat String @default("MM/DD/YYYY") // "MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"
+  timeFormat String @default("12-hour") // "12-hour", "24-hour"
+
   // Booking Settings
   enableOnlineBooking Boolean @default(true)
   bookingNotice       Int     @default(24) // hours
@@ -555,6 +559,22 @@ model WebsiteConfiguration {
   enableLiveChat      Boolean @default(false)
   enableBlog          Boolean @default(true)
   enableMultiProperty Boolean @default(true)
+
+  // NEW: System Settings
+  maintenanceMode Boolean @default(false)
+  debugMode       Boolean @default(false)
+
+  // NEW: Notification Settings
+  emailNotifications      Boolean @default(true)
+  newReservationAlerts    Boolean @default(true)
+  paymentAlerts           Boolean @default(true)
+  systemMaintenanceAlerts Boolean @default(false)
+
+  // NEW: Security Settings
+  twoFactorAuth   Boolean @default(false)
+  sessionTimeout  Boolean @default(true)
+  loginMonitoring Boolean @default(true)
+  sessionDuration Int     @default(480) // minutes
 
   // Analytics & Tracking
   googleAnalyticsId  String?

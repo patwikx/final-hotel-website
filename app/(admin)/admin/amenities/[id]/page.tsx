@@ -20,10 +20,19 @@ import {
 import Link from "next/link"
 import { updateAmenity, deleteAmenity } from "@/services/amenity-services"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
 interface EditAmenityPageProps {
   params: Promise<{ id: string }>
 }
+
+type AmenityWithBusinessUnit = Prisma.AmenityGetPayload<{
+  include: {
+    businessUnit: {
+      select: { displayName: true }
+    }
+  }
+}>
 
 async function getAmenity(id: string) {
   return await prisma.amenity.findUnique({
@@ -39,7 +48,7 @@ async function getAmenity(id: string) {
 export default function EditAmenityPage({ params }: EditAmenityPageProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [amenity, setAmenity] = useState<any>(null)
+ const [amenity, setAmenity] = useState<AmenityWithBusinessUnit | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -79,23 +88,33 @@ export default function EditAmenityPage({ params }: EditAmenityPageProps) {
     loadAmenity()
   }, [params, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!amenity) return
-    
-    setIsLoading(true)
-    try {
-      await updateAmenity(amenity.id, {
-        ...formData,
-        chargeAmount: formData.isChargeable ? formData.chargeAmount : null
-      })
-      router.push('/admin/amenities')
-    } catch (error) {
-      console.error('Failed to update amenity:', error)
-    } finally {
-      setIsLoading(false)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!amenity) return
+  
+  setIsLoading(true)
+  try {
+    const updateData = {
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      icon: formData.icon,
+      isActive: formData.isActive,
+      isChargeable: formData.isChargeable,
+      chargeAmount: formData.isChargeable 
+        ? formData.chargeAmount as unknown as Parameters<typeof updateAmenity>[1]['chargeAmount']
+        : null,
+      sortOrder: formData.sortOrder
     }
+
+    await updateAmenity(amenity.id, updateData)
+    router.push('/admin/amenities')
+  } catch (error) {
+    console.error('Failed to update amenity:', error)
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const handleDelete = async () => {
     if (!amenity || !confirm('Are you sure you want to delete this amenity?')) return
