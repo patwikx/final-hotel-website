@@ -24,7 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Heart, Bug, Lightbulb, MessageCircleQuestion, Send, Loader2 } from "lucide-react"
@@ -56,7 +55,7 @@ export function FeedbackDialog() {
   const onSubmit: SubmitHandler<FeedbackFormValues> = async (data) => {
     setIsLoading(true);
     try {
-      await axios.post('/api/feedback', data);
+      await axios.post('/api/feedbacks', data);
       setIsOpen(false);
       form.reset();
       // You could add a success toast notification here
