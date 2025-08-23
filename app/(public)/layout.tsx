@@ -1,9 +1,12 @@
+// (public)/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
 import { PublicHeader } from "@/components/homepage/public-header";
 import { PublicFooter } from "@/components/homepage/public-footer";
 import { prisma } from "@/lib/prisma";
+import { FeedbackDialog } from "@/components/feedback-widget";
 
 
 const geistSans = Geist({
@@ -46,8 +49,12 @@ export default async function PublicLayout({
           <main className="flex-grow">
             {children}
           </main>
+          
           <PublicFooter websiteConfig={websiteConfig} />
-         
+
+          {/* ADDED: The feedback widget will now appear on all pages */}
+          <FeedbackDialog />
+          
         </div>
       </body>
     </html>

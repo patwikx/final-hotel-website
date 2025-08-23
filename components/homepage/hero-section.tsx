@@ -20,7 +20,7 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
     
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % featuredProperties.length);
-    }, 6000);
+    }, 5000); // Reduced from 6000ms to 5000ms
     
     return () => clearInterval(timer);
   }, [featuredProperties.length, isAutoPlaying]);
@@ -47,7 +47,7 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center text-white z-10"
         >
           <h1 className="text-6xl md:text-8xl font-bold mb-6 font-serif bg-gradient-to-r from-white via-amber-100 to-white bg-clip-text text-transparent">
@@ -66,40 +66,45 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
 
   return (
     <section className="relative h-screen overflow-hidden">
-      {/* Background Images with Parallax Effect */}
-      <AnimatePresence mode="wait">
+      {/* Background Images with Crossfade Transition */}
+      <div className="absolute inset-0">
         {featuredProperties.map((slide, index) => (
-          index === currentSlide && (
-            <motion.div
-              key={slide.id}
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              className="absolute inset-0"
-            >
-              <div
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                style={{ 
-                  backgroundImage: `url(${slide.heroImage || `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`})` 
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
-            </motion.div>
-          )
+          <motion.div
+            key={slide.id}
+            initial={false}
+            animate={{ 
+              opacity: index === currentSlide ? 1 : 0,
+              scale: index === currentSlide ? 1 : 1.02
+            }}
+            transition={{ 
+              opacity: { duration: 0.8, ease: "easeInOut" },
+              scale: { duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }
+            }}
+            className="absolute inset-0"
+          >
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ 
+                backgroundImage: `url(${slide.heroImage || `https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`})` 
+              }}
+            />
+            {/* Static gradient overlays */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40" />
+          </motion.div>
         ))}
-      </AnimatePresence>
+      </div>
 
-      {/* Floating Elements */}
+      {/* Floating Elements with Improved Animation */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           animate={{ 
-            y: [0, -20, 0],
-            rotate: [0, 5, 0]
+            y: [0, -15, 0],
+            rotate: [0, 3, 0],
+            scale: [1, 1.05, 1]
           }}
           transition={{ 
-            duration: 6,
+            duration: 4,
             repeat: Infinity,
             ease: "easeInOut"
           }}
@@ -107,11 +112,12 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
         />
         <motion.div
           animate={{ 
-            y: [0, 30, 0],
-            rotate: [0, -3, 0]
+            y: [0, 25, 0],
+            rotate: [0, -2, 0],
+            scale: [1, 0.95, 1]
           }}
           transition={{ 
-            duration: 8,
+            duration: 6,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 2
@@ -120,7 +126,7 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
         />
       </div>
 
-      {/* Main Content */}
+      {/* Main Content with Staggered Animations */}
       <div className="relative h-full flex items-center justify-center z-10">
         <div className="container mx-auto px-6">
           <AnimatePresence mode="wait">
@@ -128,33 +134,55 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
               index === currentSlide && (
                 <motion.div
                   key={slide.id}
-                  initial={{ y: 50, opacity: 0 }}
+                  initial={{ y: 40, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -30, opacity: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  exit={{ y: -20, opacity: 0 }}
+                  transition={{ 
+                    duration: 0.7, 
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                  }}
                   className="text-center text-white max-w-5xl mx-auto"
                 >
                   {/* Property Badge */}
                   <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.5 }}
+                    transition={{ 
+                      delay: 0.15, 
+                      duration: 0.4,
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 25
+                    }}
                     className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-full px-6 py-3 mb-8 border border-white/20"
                   >
                     <MapPin className="h-4 w-4 text-amber-400" />
                     <span className="text-sm font-medium">{slide.city}, {slide.country}</span>
                   </motion.div>
 
-                  {/* Main Title */}
+                  {/* Main Title with Character Animation */}
                   <motion.h1
                     initial={{ y: 30, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.8 }}
+                    transition={{ 
+                      delay: 0.2, 
+                      duration: 0.6,
+                      ease: "easeOut"
+                    }}
                     className="text-5xl md:text-8xl font-bold mb-6 font-serif leading-tight"
                   >
-                    <span className="bg-gradient-to-r from-white via-amber-100 to-white bg-clip-text text-transparent">
+                    <motion.span 
+                      initial={{ backgroundPosition: "0% 50%" }}
+                      animate={{ backgroundPosition: "100% 50%" }}
+                      transition={{ 
+                        delay: 0.4, 
+                        duration: 1.2,
+                        ease: "easeInOut"
+                      }}
+                      className="bg-gradient-to-r from-white via-amber-100 to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                    >
                       {slide.displayName}
-                    </span>
+                    </motion.span>
                   </motion.h1>
 
                   {/* Description */}
@@ -162,75 +190,133 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
                     <motion.p
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.6, duration: 0.6 }}
+                      transition={{ 
+                        delay: 0.35, 
+                        duration: 0.5,
+                        ease: "easeOut"
+                      }}
                       className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto leading-relaxed text-slate-200"
                     >
                       {slide.shortDescription}
                     </motion.p>
                   )}
 
-                  {/* Rating */}
+                  {/* Rating with Staggered Stars */}
                   <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.8, duration: 0.5 }}
+                    transition={{ 
+                      delay: 0.45, 
+                      duration: 0.4,
+                      type: "spring",
+                      stiffness: 200
+                    }}
                     className="flex items-center justify-center gap-2 mb-10"
                   >
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                        <motion.div
+                          key={i}
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{
+                            delay: 0.5 + (i * 0.05),
+                            duration: 0.3,
+                            type: "spring",
+                            stiffness: 200
+                          }}
+                        >
+                          <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                        </motion.div>
                       ))}
                     </div>
-                    <span className="text-sm text-slate-300 ml-2">Luxury Hospitality Excellence</span>
+                    <motion.span 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.75, duration: 0.3 }}
+                      className="text-sm text-slate-300 ml-2"
+                    >
+                      Luxury Hospitality Excellence
+                    </motion.span>
                   </motion.div>
 
                   {/* Action Buttons */}
                   <motion.div
                     initial={{ y: 30, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 1, duration: 0.6 }}
+                    transition={{ 
+                      delay: 0.6, 
+                      duration: 0.5,
+                      ease: "easeOut"
+                    }}
                     className="flex flex-col sm:flex-row gap-4 justify-center items-center"
                   >
-                    <Button
-                      size="lg"
-                      asChild
-                      className="group text-lg px-8 py-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 border-0 rounded-full"
+                    <motion.div
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     >
-                      <Link href={`/properties/${slide.slug}`} className="flex items-center gap-2">
-                        <Calendar className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                        Book Your Stay
-                      </Link>
-                    </Button>
+                      <Button
+                        size="lg"
+                        asChild
+                        className="group text-lg px-8 py-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 border-0 rounded-full"
+                      >
+                        <Link href={`/properties/${slide.slug}`} className="flex items-center gap-2">
+                          <Calendar className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                          Book Your Stay
+                        </Link>
+                      </Button>
+                    </motion.div>
                     
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      asChild
-                      className="group text-lg px-8 py-6 bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300 rounded-full"
+                    <motion.div
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     >
-                      <Link href={`/properties/${slide.slug}`} className="flex items-center gap-2">
-                        <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                        Virtual Tour
-                      </Link>
-                    </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        asChild
+                        className="group text-lg px-8 py-6 bg-white/10 backdrop-blur-md border-white/30 text-white hover:bg-white/20 hover:border-white/50 transition-all duration-300 rounded-full"
+                      >
+                        <Link href={`/properties/${slide.slug}`} className="flex items-center gap-2">
+                          <Play className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                          Virtual Tour
+                        </Link>
+                      </Button>
+                    </motion.div>
                   </motion.div>
 
                   {/* Quick Info */}
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 1.2, duration: 0.6 }}
+                    transition={{ 
+                      delay: 0.8, 
+                      duration: 0.4,
+                      ease: "easeOut"
+                    }}
                     className="flex items-center justify-center gap-8 mt-12 text-sm text-slate-300"
                   >
-                    <div className="flex items-center gap-2">
+                    <motion.div 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.85, duration: 0.3 }}
+                      className="flex items-center gap-2"
+                    >
                       <Users className="h-4 w-4 text-amber-400" />
                       <span>Premium Service</span>
-                    </div>
+                    </motion.div>
                     <div className="h-4 w-px bg-slate-400"></div>
-                    <div className="flex items-center gap-2">
+                    <motion.div 
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.9, duration: 0.3 }}
+                      className="flex items-center gap-2"
+                    >
                       <Star className="h-4 w-4 text-amber-400" />
                       <span>5-Star Luxury</span>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 </motion.div>
               )
@@ -239,29 +325,39 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Navigation Controls */}
+      {/* Navigation Controls with Enhanced Interactions */}
       {featuredProperties.length > 1 && (
         <>
           {/* Arrow Navigation */}
           <motion.button
-            whileHover={{ scale: 1.1, x: -5 }}
+            whileHover={{ 
+              scale: 1.1, 
+              x: -3,
+              backgroundColor: "rgba(255, 255, 255, 0.25)"
+            }}
             whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
             onClick={prevSlide}
-            className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20"
+            className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white transition-all duration-200 z-20"
           >
             <ChevronLeft className="h-6 w-6" />
           </motion.button>
 
           <motion.button
-            whileHover={{ scale: 1.1, x: 5 }}
+            whileHover={{ 
+              scale: 1.1, 
+              x: 3,
+              backgroundColor: "rgba(255, 255, 255, 0.25)"
+            }}
             whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
             onClick={nextSlide}
-            className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20"
+            className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white transition-all duration-200 z-20"
           >
             <ChevronRight className="h-6 w-6" />
           </motion.button>
 
-          {/* Slide Indicators */}
+          {/* Slide Indicators with Smoother Transitions */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
             {featuredProperties.map((_, index) => (
               <motion.button
@@ -269,7 +365,7 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => goToSlide(index)}
-                className={`relative transition-all duration-500 rounded-full ${
+                className={`relative transition-all duration-300 rounded-full ${
                   index === currentSlide
                     ? "w-12 h-3 bg-white shadow-lg"
                     : "w-3 h-3 bg-white/50 hover:bg-white/70"
@@ -280,7 +376,12 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
                   <motion.div
                     layoutId="activeIndicator"
                     className="absolute inset-0 bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    transition={{ 
+                      type: "spring", 
+                      stiffness: 400, 
+                      damping: 30,
+                      duration: 0.3
+                    }}
                   />
                 )}
               </motion.button>
@@ -289,13 +390,21 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
 
           {/* Auto-play Control */}
           <motion.button
-            whileHover={{ scale: 1.1 }}
+            whileHover={{ 
+              scale: 1.1,
+              backgroundColor: "rgba(255, 255, 255, 0.2)"
+            }}
             whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
             onClick={() => setIsAutoPlaying(!isAutoPlaying)}
-            className="absolute bottom-8 right-8 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 z-20"
+            className="absolute bottom-8 right-8 w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white transition-all duration-200 z-20"
           >
             {isAutoPlaying ? (
-              <div className="w-3 h-3 bg-current rounded-full animate-pulse" />
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-3 h-3 bg-current rounded-full" 
+              />
             ) : (
               <Play className="h-4 w-4 ml-0.5" />
             )}
@@ -307,13 +416,12 @@ export function HeroSection({ featuredProperties = [] }: HeroSectionProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 2, duration: 1 }}
+        transition={{ delay: 1.2, duration: 0.8 }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/70 z-20"
       >
-        <span className="text-xs font-medium tracking-wider uppercase">Scroll to explore</span>
         <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           className="w-px h-8 bg-gradient-to-b from-white/50 to-transparent"
         />
       </motion.div>

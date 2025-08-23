@@ -2503,3 +2503,57 @@ model SearchQuery {
   @@index([createdAt])
   @@map("search_queries")
 }
+
+model Feedback {
+  id String @id @default(cuid())
+
+  // The actual feedback or suggestion text
+  content String @db.Text
+
+  // Categorization of the feedback (e.g., Feature Request, Bug Report, General Inquiry)
+  category String? @default("General")
+
+  // The sentiment of the feedback (e.g., Positive, Neutral, Negative)
+  sentiment String? @default("Neutral")
+
+  // The status of the feedback (e.g., New, In Progress, Resolved, Closed)
+  status String @default("New")
+
+  // Priority level (e.g., Low, Medium, High)
+  priority String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// You can add more enums for better type safety and consistency
+enum FeedbackCategory {
+  BUG_REPORT
+  FEATURE_REQUEST
+  USABILITY_ISSUE
+  GENERAL_INQUIRY
+  COMPLIMENT
+}
+
+enum FeedbackSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum FeedbackStatus {
+  NEW
+  IN_REVIEW
+  PLANNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  DUPLICATE
+}
+
+enum FeedbackPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

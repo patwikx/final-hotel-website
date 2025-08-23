@@ -16,7 +16,8 @@ import {
   Palette,
   Clock,
   Image as ImageIcon,
-  AlertCircle
+  AlertCircle,
+  DollarSign
 } from "lucide-react"
 import { BusinessUnit, PropertyType } from "@prisma/client"
 import { z } from "zod"
@@ -75,6 +76,19 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [updateSuccess, setUpdateSuccess] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Helper functions to convert between percentage display and decimal storage
+  const toPercentage = (decimal: number | null | undefined): string => {
+    if (decimal === null || decimal === undefined) return ""
+    return (decimal * 100).toString()
+  }
+  
+  const toDecimal = (percentage: string): number | undefined => {
+    const num = parseFloat(percentage)
+    if (isNaN(num)) return undefined
+    return num / 100
+  }
+  
   const [formData, setFormData] = useState<UpdatePropertyData>({
     displayName: property.displayName,
     name: property.name,
@@ -117,6 +131,12 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
     metaKeywords: property.metaKeywords || ""
   })
 
+  // Local state for percentage display values
+  const [percentageValues, setPercentageValues] = useState({
+    taxRate: toPercentage(property.taxRate ? Number(property.taxRate) : undefined),
+    serviceFeeRate: toPercentage(property.serviceFeeRate ? Number(property.serviceFeeRate) : undefined)
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -124,7 +144,14 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
     setErrors({})
 
     try {
-      const validatedData = updatePropertySchema.parse(formData)
+      // Convert percentage values to decimals before validation
+      const dataToValidate = {
+        ...formData,
+        taxRate: toDecimal(percentageValues.taxRate),
+        serviceFeeRate: toDecimal(percentageValues.serviceFeeRate)
+      }
+      
+      const validatedData = updatePropertySchema.parse(dataToValidate)
       
       const response = await axios.patch(`/api/properties/${property.slug}`, validatedData)
       
@@ -480,6 +507,57 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       min="0"
                       max="168"
                     />
+                  </div>
+                </div>
+
+                {/* Financial Settings with Percentage Display */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="taxRate" className="text-sm font-semibold text-slate-700">
+                      Tax Rate (%)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="taxRate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={percentageValues.taxRate}
+                        onChange={(e) => setPercentageValues(prev => ({ ...prev, taxRate: e.target.value }))}
+                        placeholder="15.00"
+                        className={`h-12 pr-8 ${getError('taxRate') ? 'border-red-500' : ''}`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</div>
+                    </div>
+                    {getError('taxRate') && (
+                      <p className="text-sm text-red-600">{getError('taxRate')}</p>
+                    )}
+                    <p className="text-xs text-slate-500">Enter as percentage (e.g., 15 for 15%)</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="serviceFeeRate" className="text-sm font-semibold text-slate-700">
+                      Service Fee Rate (%)
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="serviceFeeRate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={percentageValues.serviceFeeRate}
+                        onChange={(e) => setPercentageValues(prev => ({ ...prev, serviceFeeRate: e.target.value }))}
+                        placeholder="10.00"
+                        className={`h-12 pr-8 ${getError('serviceFeeRate') ? 'border-red-500' : ''}`}
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</div>
+                    </div>
+                    {getError('serviceFeeRate') && (
+                      <p className="text-sm text-red-600">{getError('serviceFeeRate')}</p>
+                    )}
+                    <p className="text-xs text-slate-500">Enter as percentage (e.g., 10 for 10%)</p>
                   </div>
                 </div>
               </CardContent>
