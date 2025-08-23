@@ -2,9 +2,9 @@
   "name": "final-hotel-system",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
+"scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
