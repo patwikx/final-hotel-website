@@ -25,15 +25,23 @@ import {
   Settings, 
   Building,
   MapPin,
-  Star,
   Users,
   Bed
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
+import { BusinessUnit } from "@prisma/client"
+
+type PropertyWithCounts = BusinessUnit & {
+  _count: {
+    rooms: number;
+    roomTypes: number;
+    reservations: number;
+  };
+};
 
 export default async function PropertiesManagement() {
-  const properties = await prisma.businessUnit.findMany({
+  const propertiesData = await prisma.businessUnit.findMany({
     include: {
       _count: {
         select: {
@@ -46,6 +54,8 @@ export default async function PropertiesManagement() {
     orderBy: { name: 'asc' }
   })
 
+  // Serialize the data to ensure type safety
+  const properties: PropertyWithCounts[] = JSON.parse(JSON.stringify(propertiesData));
   const getPropertyTypeColor = (type: string) => {
     switch (type) {
       case 'HOTEL': return 'bg-blue-100 text-blue-800'

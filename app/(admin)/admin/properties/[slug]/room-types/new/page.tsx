@@ -2,41 +2,38 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
   Bed, 
-  Image as ImageIcon,
   Settings,
+  DollarSign,
+  Image as ImageIcon,
   AlertCircle
 } from "lucide-react"
-import { createRoomType } from "@/services/room-type-services"
 import { RoomType } from "@prisma/client"
 import { z } from "zod"
+import axios from "axios"
 
 // Zod schema for validation
+// Note: All fields that are optional on the edit form are now required here.
 const createRoomTypeSchema = z.object({
-  businessUnitId: z.string().uuid("Invalid business unit ID"),
   name: z.string()
-    .min(1, "Name is required")
+    .min(1, "Internal name is required")
     .max(100, "Name must be less than 100 characters")
     .regex(/^[a-z0-9-]+$/, "Name must be lowercase letters, numbers, and hyphens only"),
   displayName: z.string()
     .min(1, "Display name is required")
     .max(200, "Display name must be less than 200 characters"),
-  type: z.nativeEnum(RoomType, {
-    errorMap: () => ({ message: "Please select a valid room type" })
-  }),
+  type: z.nativeEnum(RoomType),
   baseRate: z.number()
     .min(0.01, "Base rate must be greater than 0")
     .max(999999.99, "Base rate is too high"),
@@ -57,32 +54,29 @@ const createRoomTypeSchema = z.object({
     .int("Max infants must be a whole number")
     .min(0, "Max infants cannot be negative")
     .max(10, "Max infants cannot exceed 10"),
-  bedConfiguration: z.string().optional(),
+  bedConfiguration: z.string().optional().or(z.literal("")),
   roomSize: z.number()
     .min(0, "Room size cannot be negative")
-    .max(10000, "Room size is too large")
-    .optional(),
-  hasBalcony: z.boolean().default(false),
-  hasOceanView: z.boolean().default(false),
-  hasPoolView: z.boolean().default(false),
-  hasKitchenette: z.boolean().default(false),
-  hasLivingArea: z.boolean().default(false),
-  smokingAllowed: z.boolean().default(false),
-  petFriendly: z.boolean().default(false),
-  isAccessible: z.boolean().default(false),
+    .max(10000, "Room size is too large").optional().or(z.literal("")),
+  hasBalcony: z.boolean().optional(),
+  hasOceanView: z.boolean().optional(),
+  hasPoolView: z.boolean().optional(),
+  hasKitchenette: z.boolean().optional(),
+  hasLivingArea: z.boolean().optional(),
+  smokingAllowed: z.boolean().optional(),
+  petFriendly: z.boolean().optional(),
+  isAccessible: z.boolean().optional(),
   extraPersonRate: z.number()
     .min(0, "Extra person rate cannot be negative")
-    .max(999999.99, "Extra person rate is too high")
-    .optional(),
+    .max(999999.99, "Extra person rate is too high").optional(),
   extraChildRate: z.number()
     .min(0, "Extra child rate cannot be negative")
-    .max(999999.99, "Extra child rate is too high")
-    .optional(),
+    .max(999999.99, "Extra child rate is too high").optional(),
   primaryImage: z.string().url("Invalid image URL").optional().or(z.literal("")),
-  images: z.array(z.string().url("Invalid image URL")).default([]),
+  images: z.array(z.string().url("Invalid image URL")).optional(),
   floorPlan: z.string().url("Invalid floor plan URL").optional().or(z.literal("")),
-  isActive: z.boolean().default(true),
-  sortOrder: z.number().int("Sort order must be a whole number").min(0).default(0)
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int("Sort order must be a whole number").min(0).optional()
 }).refine(
   (data) => data.maxOccupancy >= data.maxAdults + data.maxChildren,
   {
@@ -93,92 +87,83 @@ const createRoomTypeSchema = z.object({
 
 type CreateRoomTypeData = z.infer<typeof createRoomTypeSchema>
 
-// Helper function to format data for Prisma (handle Decimal conversion)
-const formatRoomTypeForPrisma = (data: CreateRoomTypeData) => ({
-  ...data,
-  baseRate: data.baseRate.toString(),
-  roomSize: data.roomSize ? data.roomSize.toString() : undefined,
-  extraPersonRate: data.extraPersonRate ? data.extraPersonRate.toString() : undefined,
-  extraChildRate: data.extraChildRate ? data.extraChildRate.toString() : undefined,
-  primaryImage: data.primaryImage || undefined,
-  floorPlan: data.floorPlan || undefined,
-})
-
-interface NewRoomTypePageProps {
+interface CreateRoomTypePageProps {
   params: Promise<{ slug: string }>
 }
 
-export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
+export default function CreateRoomTypePage({ params }: CreateRoomTypePageProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [businessUnitId, setBusinessUnitId] = useState("mock-business-unit-id")
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-    watch,
-    reset,
-  } = useForm<CreateRoomTypeData>({
-    resolver: zodResolver(createRoomTypeSchema),
-    defaultValues: {
-      businessUnitId: businessUnitId,
-      name: "",
-      displayName: "",
-      type: "STANDARD",
-      baseRate: 0,
-      description: "",
-      maxOccupancy: 2,
-      maxAdults: 2,
-      maxChildren: 0,
-      maxInfants: 0,
-      bedConfiguration: "",
-      roomSize: 0,
-      hasBalcony: false,
-      hasOceanView: false,
-      hasPoolView: false,
-      hasKitchenette: false,
-      hasLivingArea: false,
-      smokingAllowed: false,
-      petFriendly: false,
-      isAccessible: false,
-      extraPersonRate: 0,
-      extraChildRate: 0,
-      primaryImage: "",
-      images: [],
-      floorPlan: "",
-      isActive: true,
-      sortOrder: 0
-    }
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  
+  // Set initial state with default values for a new room type
+  const [formData, setFormData] = useState<CreateRoomTypeData>({
+    name: "",
+    displayName: "",
+    type: "STANDARD",
+    baseRate: 0,
+    description: "",
+    maxOccupancy: 2,
+    maxAdults: 2,
+    maxChildren: 0,
+    maxInfants: 0,
+    bedConfiguration: "",
+    roomSize: 0,
+    hasBalcony: false,
+    hasOceanView: false,
+    hasPoolView: false,
+    hasKitchenette: false,
+    hasLivingArea: false,
+    smokingAllowed: false,
+    petFriendly: false,
+    isAccessible: false,
+    extraPersonRate: 0,
+    extraChildRate: 0,
+    primaryImage: "",
+    images: [],
+    floorPlan: "",
+    isActive: true,
+    sortOrder: 0
   })
 
-  const watchedType = watch("type")
-
-  const onSubmit = async (data: CreateRoomTypeData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
     setIsLoading(true)
+    setErrors({})
     
     try {
-      // Format data for Prisma before sending
-      const formattedData = formatRoomTypeForPrisma(data)
-      await createRoomType(formattedData)
-      router.back()
+      // Await the params promise first
+      const resolvedParams = await params
+      const { slug } = resolvedParams
+      
+      // Add the propertySlug to the data payload for the API route
+      const validatedData = createRoomTypeSchema.parse(formData)
+      const payload = { ...validatedData, businessUnitSlug: slug }
+      
+      const response = await axios.post(`/api/properties/${slug}/room-types`, payload)
+      
+      if (response.status === 201) {
+        router.push(`/admin/properties/${slug}/room-types/${response.data.id}`)
+      }
     } catch (error) {
       console.error('Failed to create room type:', error)
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {}
+        error.issues.forEach((issue) => {
+          const path = issue.path.join('.')
+          fieldErrors[path] = issue.message
+        })
+        setErrors(fieldErrors)
+      } else if (axios.isAxiosError(error)) {
+        setErrors({ general: error.response?.data?.error || 'Failed to create room type' })
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
-  const roomTypeOptions = [
-    { value: "STANDARD", label: "Standard" },
-    { value: "DELUXE", label: "Deluxe" },
-    { value: "SUITE", label: "Suite" },
-    { value: "VILLA", label: "Villa" },
-    { value: "PENTHOUSE", label: "Penthouse" },
-    { value: "FAMILY", label: "Family" },
-    { value: "ACCESSIBLE", label: "Accessible" },
-  ]
+  const getError = (field: string) => errors[field]
 
   return (
     <div className="space-y-8">
@@ -191,12 +176,12 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-slate-900 font-serif">Add New Room Type</h1>
-            <p className="text-slate-600 mt-1">Create a new room category for this property</p>
+            <p className="text-slate-600 mt-1">Create a new accommodation category for this property</p>
           </div>
         </div>
         
         <Button 
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit}
           disabled={isLoading}
           className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
         >
@@ -219,11 +204,11 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Please fix the following errors before submitting:
+            Please fix the following errors:
             <ul className="mt-2 list-disc list-inside">
               {Object.entries(errors).map(([field, error]) => (
                 <li key={field} className="text-sm">
-                  {error.message}
+                  {error}
                 </li>
               ))}
             </ul>
@@ -231,7 +216,7 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -250,12 +235,13 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     </Label>
                     <Input
                       id="name"
-                      {...register("name")}
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="deluxe-king"
-                      className={`h-12 ${errors.name ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('name') ? 'border-red-500' : ''}`}
                     />
-                    {errors.name && (
-                      <p className="text-sm text-red-600">{errors.name.message}</p>
+                    {getError('name') && (
+                      <p className="text-sm text-red-600">{getError('name')}</p>
                     )}
                   </div>
 
@@ -265,12 +251,13 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     </Label>
                     <Input
                       id="displayName"
-                      {...register("displayName")}
+                      value={formData.displayName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                       placeholder="Deluxe King Room"
-                      className={`h-12 ${errors.displayName ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('displayName') ? 'border-red-500' : ''}`}
                     />
-                    {errors.displayName && (
-                      <p className="text-sm text-red-600">{errors.displayName.message}</p>
+                    {getError('displayName') && (
+                      <p className="text-sm text-red-600">{getError('displayName')}</p>
                     )}
                   </div>
                 </div>
@@ -281,22 +268,24 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                       Room Category *
                     </Label>
                     <Select 
-                      value={watchedType} 
-                      onValueChange={(value) => setValue("type", value as RoomType)}
+                      value={formData.type} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as RoomType }))}
                     >
-                      <SelectTrigger className={`h-12 ${errors.type ? 'border-red-500' : ''}`}>
+                      <SelectTrigger className={`h-12 ${getError('type') ? 'border-red-500' : ''}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {roomTypeOptions.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="STANDARD">Standard</SelectItem>
+                        <SelectItem value="DELUXE">Deluxe</SelectItem>
+                        <SelectItem value="SUITE">Suite</SelectItem>
+                        <SelectItem value="VILLA">Villa</SelectItem>
+                        <SelectItem value="PENTHOUSE">Penthouse</SelectItem>
+                        <SelectItem value="FAMILY">Family</SelectItem>
+                        <SelectItem value="ACCESSIBLE">Accessible</SelectItem>
                       </SelectContent>
                     </Select>
-                    {errors.type && (
-                      <p className="text-sm text-red-600">{errors.type.message}</p>
+                    {getError('type') && (
+                      <p className="text-sm text-red-600">{getError('type')}</p>
                     )}
                   </div>
 
@@ -307,14 +296,15 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     <Input
                       id="baseRate"
                       type="number"
-                      {...register("baseRate", { valueAsNumber: true })}
+                      value={formData.baseRate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, baseRate: parseFloat(e.target.value) || 0 }))}
                       placeholder="5000"
-                      className={`h-12 ${errors.baseRate ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('baseRate') ? 'border-red-500' : ''}`}
                       min="0"
                       step="0.01"
                     />
-                    {errors.baseRate && (
-                      <p className="text-sm text-red-600">{errors.baseRate.message}</p>
+                    {getError('baseRate') && (
+                      <p className="text-sm text-red-600">{getError('baseRate')}</p>
                     )}
                   </div>
                 </div>
@@ -325,12 +315,13 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                   </Label>
                   <Textarea
                     id="description"
-                    {...register("description")}
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Detailed description of the room type..."
-                    className={`h-24 ${errors.description ? 'border-red-500' : ''}`}
+                    className={`h-24 ${getError('description') ? 'border-red-500' : ''}`}
                   />
-                  {errors.description && (
-                    <p className="text-sm text-red-600">{errors.description.message}</p>
+                  {getError('description') && (
+                    <p className="text-sm text-red-600">{getError('description')}</p>
                   )}
                 </div>
 
@@ -341,7 +332,8 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     </Label>
                     <Input
                       id="bedConfiguration"
-                      {...register("bedConfiguration")}
+                      value={formData.bedConfiguration}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bedConfiguration: e.target.value }))}
                       placeholder="1 King Bed"
                       className="h-12"
                     />
@@ -354,13 +346,14 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     <Input
                       id="roomSize"
                       type="number"
-                      {...register("roomSize", { valueAsNumber: true })}
+                      value={formData.roomSize || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, roomSize: parseFloat(e.target.value) || 0 }))}
                       placeholder="35"
-                      className={`h-12 ${errors.roomSize ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('roomSize') ? 'border-red-500' : ''}`}
                       min="0"
                     />
-                    {errors.roomSize && (
-                      <p className="text-sm text-red-600">{errors.roomSize.message}</p>
+                    {getError('roomSize') && (
+                      <p className="text-sm text-red-600">{getError('roomSize')}</p>
                     )}
                   </div>
 
@@ -371,13 +364,14 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     <Input
                       id="maxOccupancy"
                       type="number"
-                      {...register("maxOccupancy", { valueAsNumber: true })}
+                      value={formData.maxOccupancy}
+                      onChange={(e) => setFormData(prev => ({ ...prev, maxOccupancy: parseInt(e.target.value) || 0 }))}
                       placeholder="2"
-                      className={`h-12 ${errors.maxOccupancy ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('maxOccupancy') ? 'border-red-500' : ''}`}
                       min="1"
                     />
-                    {errors.maxOccupancy && (
-                      <p className="text-sm text-red-600">{errors.maxOccupancy.message}</p>
+                    {getError('maxOccupancy') && (
+                      <p className="text-sm text-red-600">{getError('maxOccupancy')}</p>
                     )}
                   </div>
                 </div>
@@ -390,13 +384,14 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     <Input
                       id="maxAdults"
                       type="number"
-                      {...register("maxAdults", { valueAsNumber: true })}
+                      value={formData.maxAdults}
+                      onChange={(e) => setFormData(prev => ({ ...prev, maxAdults: parseInt(e.target.value) || 0 }))}
                       placeholder="2"
-                      className={`h-12 ${errors.maxAdults ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('maxAdults') ? 'border-red-500' : ''}`}
                       min="1"
                     />
-                    {errors.maxAdults && (
-                      <p className="text-sm text-red-600">{errors.maxAdults.message}</p>
+                    {getError('maxAdults') && (
+                      <p className="text-sm text-red-600">{getError('maxAdults')}</p>
                     )}
                   </div>
 
@@ -407,13 +402,14 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     <Input
                       id="maxChildren"
                       type="number"
-                      {...register("maxChildren", { valueAsNumber: true })}
+                      value={formData.maxChildren}
+                      onChange={(e) => setFormData(prev => ({ ...prev, maxChildren: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className={`h-12 ${errors.maxChildren ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('maxChildren') ? 'border-red-500' : ''}`}
                       min="0"
                     />
-                    {errors.maxChildren && (
-                      <p className="text-sm text-red-600">{errors.maxChildren.message}</p>
+                    {getError('maxChildren') && (
+                      <p className="text-sm text-red-600">{getError('maxChildren')}</p>
                     )}
                   </div>
 
@@ -424,53 +420,200 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                     <Input
                       id="maxInfants"
                       type="number"
-                      {...register("maxInfants", { valueAsNumber: true })}
+                      value={formData.maxInfants}
+                      onChange={(e) => setFormData(prev => ({ ...prev, maxInfants: parseInt(e.target.value) || 0 }))}
                       placeholder="0"
-                      className={`h-12 ${errors.maxInfants ? 'border-red-500' : ''}`}
+                      className={`h-12 ${getError('maxInfants') ? 'border-red-500' : ''}`}
                       min="0"
                     />
-                    {errors.maxInfants && (
-                      <p className="text-sm text-red-600">{errors.maxInfants.message}</p>
+                    {getError('maxInfants') && (
+                      <p className="text-sm text-red-600">{getError('maxInfants')}</p>
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
+            {/* Room Features */}
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-amber-600" />
+                  Room Features
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="extraPersonRate" className="text-sm font-semibold text-slate-700">
-                      Extra Person Rate (₱)
-                    </Label>
-                    <Input
-                      id="extraPersonRate"
-                      type="number"
-                      {...register("extraPersonRate", { valueAsNumber: true })}
-                      placeholder="1000"
-                      className={`h-12 ${errors.extraPersonRate ? 'border-red-500' : ''}`}
-                      min="0"
-                      step="0.01"
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Private Balcony</Label>
+                      <p className="text-xs text-slate-500">Outdoor space with seating</p>
+                    </div>
+                    <Switch 
+                      checked={formData.hasBalcony}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasBalcony: checked }))}
                     />
-                    {errors.extraPersonRate && (
-                      <p className="text-sm text-red-600">{errors.extraPersonRate.message}</p>
-                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="extraChildRate" className="text-sm font-semibold text-slate-700">
-                      Extra Child Rate (₱)
-                    </Label>
-                    <Input
-                      id="extraChildRate"
-                      type="number"
-                      {...register("extraChildRate", { valueAsNumber: true })}
-                      placeholder="500"
-                      className={`h-12 ${errors.extraChildRate ? 'border-red-500' : ''}`}
-                      min="0"
-                      step="0.01"
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Ocean View</Label>
+                      <p className="text-xs text-slate-500">Direct ocean views</p>
+                    </div>
+                    <Switch 
+                      checked={formData.hasOceanView}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasOceanView: checked }))}
                     />
-                    {errors.extraChildRate && (
-                      <p className="text-sm text-red-600">{errors.extraChildRate.message}</p>
-                    )}
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Pool View</Label>
+                      <p className="text-xs text-slate-500">Overlooks pool area</p>
+                    </div>
+                    <Switch 
+                      checked={formData.hasPoolView}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasPoolView: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Kitchenette</Label>
+                      <p className="text-xs text-slate-500">Basic cooking facilities</p>
+                    </div>
+                    <Switch 
+                      checked={formData.hasKitchenette}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasKitchenette: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Living Area</Label>
+                      <p className="text-xs text-slate-500">Separate seating area</p>
+                    </div>
+                    <Switch 
+                      checked={formData.hasLivingArea}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, hasLivingArea: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Smoking Allowed</Label>
+                      <p className="text-xs text-slate-500">Smoking permitted</p>
+                    </div>
+                    <Switch 
+                      checked={formData.smokingAllowed}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, smokingAllowed: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Pet Friendly</Label>
+                      <p className="text-xs text-slate-500">Pets welcome</p>
+                    </div>
+                    <Switch 
+                      checked={formData.petFriendly}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, petFriendly: checked }))}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-semibold text-slate-700">Accessible</Label>
+                      <p className="text-xs text-slate-500">ADA compliant</p>
+                    </div>
+                    <Switch 
+                      checked={formData.isAccessible}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isAccessible: checked }))}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Settings Sidebar */}
+          <div className="space-y-6">
+            {/* Pricing Settings */}
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <DollarSign className="h-5 w-5 text-amber-600" />
+                  Pricing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Extra Person Rate (₱)</Label>
+                  <Input
+                    type="number"
+                    value={formData.extraPersonRate || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, extraPersonRate: parseFloat(e.target.value) || 0 }))}
+                    placeholder="1000"
+                    className={`h-12 ${getError('extraPersonRate') ? 'border-red-500' : ''}`}
+                    min="0"
+                    step="0.01"
+                  />
+                  {getError('extraPersonRate') && (
+                    <p className="text-sm text-red-600">{getError('extraPersonRate')}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Extra Child Rate (₱)</Label>
+                  <Input
+                    type="number"
+                    value={formData.extraChildRate || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, extraChildRate: parseFloat(e.target.value) || 0 }))}
+                    placeholder="500"
+                    className={`h-12 ${getError('extraChildRate') ? 'border-red-500' : ''}`}
+                    min="0"
+                    step="0.01"
+                  />
+                  {getError('extraChildRate') && (
+                    <p className="text-sm text-red-600">{getError('extraChildRate')}</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Status Settings */}
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Settings className="h-5 w-5 text-amber-600" />
+                  Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold text-slate-700">Active</Label>
+                    <p className="text-xs text-slate-500">Available for booking</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isActive}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700">Sort Order</Label>
+                  <Input
+                    type="number"
+                    value={formData.sortOrder}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                    placeholder="0"
+                    className={`h-12 ${getError('sortOrder') ? 'border-red-500' : ''}`}
+                    min="0"
+                  />
+                  {getError('sortOrder') && (
+                    <p className="text-sm text-red-600">{getError('sortOrder')}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -487,97 +630,27 @@ export default function NewRoomTypePage({ params }: NewRoomTypePageProps) {
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700">Primary Image URL</Label>
                   <Input
-                    {...register("primaryImage")}
+                    value={formData.primaryImage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, primaryImage: e.target.value }))}
                     placeholder="https://example.com/image.jpg"
-                    className={`h-12 ${errors.primaryImage ? 'border-red-500' : ''}`}
+                    className={`h-12 ${getError('primaryImage') ? 'border-red-500' : ''}`}
                   />
-                  {errors.primaryImage && (
-                    <p className="text-sm text-red-600">{errors.primaryImage.message}</p>
+                  {getError('primaryImage') && (
+                    <p className="text-sm text-red-600">{getError('primaryImage')}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700">Floor Plan URL</Label>
                   <Input
-                    {...register("floorPlan")}
+                    value={formData.floorPlan}
+                    onChange={(e) => setFormData(prev => ({ ...prev, floorPlan: e.target.value }))}
                     placeholder="https://example.com/floorplan.jpg"
-                    className={`h-12 ${errors.floorPlan ? 'border-red-500' : ''}`}
+                    className={`h-12 ${getError('floorPlan') ? 'border-red-500' : ''}`}
                   />
-                  {errors.floorPlan && (
-                    <p className="text-sm text-red-600">{errors.floorPlan.message}</p>
+                  {getError('floorPlan') && (
+                    <p className="text-sm text-red-600">{getError('floorPlan')}</p>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Settings className="h-5 w-5 text-amber-600" />
-                  Room Features
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {[
-                  { key: "hasBalcony", label: "Has Balcony" },
-                  { key: "hasOceanView", label: "Ocean View" },
-                  { key: "hasPoolView", label: "Pool View" },
-                  { key: "hasKitchenette", label: "Kitchenette" },
-                  { key: "hasLivingArea", label: "Living Area" },
-                  { key: "smokingAllowed", label: "Smoking Allowed" },
-                  { key: "petFriendly", label: "Pet Friendly" },
-                  { key: "isAccessible", label: "Wheelchair Accessible" },
-                ].map((feature) => (
-                  <div key={feature.key} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={feature.key}
-                      {...register(feature.key as keyof CreateRoomTypeData)}
-                    />
-                    <Label 
-                      htmlFor={feature.key} 
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {feature.label}
-                    </Label>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-lg">Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sortOrder" className="text-sm font-semibold text-slate-700">
-                    Sort Order
-                  </Label>
-                  <Input
-                    id="sortOrder"
-                    type="number"
-                    {...register("sortOrder", { valueAsNumber: true })}
-                    placeholder="0"
-                    className="h-12"
-                    min="0"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isActive"
-                    {...register("isActive")}
-                    defaultChecked
-                  />
-                  <Label 
-                    htmlFor="isActive" 
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Active
-                  </Label>
                 </div>
               </CardContent>
             </Card>

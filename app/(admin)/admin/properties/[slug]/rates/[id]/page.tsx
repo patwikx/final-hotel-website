@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
@@ -15,10 +16,45 @@ import {
   Calendar,
   Settings,
   Clock,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react"
-import { updateRate, deleteRate } from "@/services/rate-services"
 import { RoomRate } from "@prisma/client"
+import { z } from "zod"
+import axios from "axios"
+
+// Zod schema for validation
+const updateRateSchema = z.object({
+  name: z.string().min(1, "Rate name is required").optional(),
+  baseRate: z.number().min(0.01, "Base rate must be greater than 0").optional(),
+  validFrom: z.string().optional(),
+  validTo: z.string().optional(),
+  description: z.string().optional(),
+  currency: z.string().optional(),
+  monday: z.boolean().optional(),
+  tuesday: z.boolean().optional(),
+  wednesday: z.boolean().optional(),
+  thursday: z.boolean().optional(),
+  friday: z.boolean().optional(),
+  saturday: z.boolean().optional(),
+  sunday: z.boolean().optional(),
+  minStay: z.number().int().min(1).optional(),
+  maxStay: z.number().int().min(0).optional(),
+  minAdvance: z.number().int().min(0).optional(),
+  maxAdvance: z.number().int().min(0).optional(),
+  extraPersonRate: z.number().min(0).optional(),
+  childRate: z.number().min(0).optional(),
+  isActive: z.boolean().optional(),
+  priority: z.number().int().min(0).optional()
+}).refine(
+  (data) => !data.validFrom || !data.validTo || new Date(data.validTo) > new Date(data.validFrom),
+  {
+    message: "Valid to date must be after valid from date",
+    path: ["validTo"]
+  }
+)
+
+type UpdateRateData = z.infer<typeof updateRateSchema>
 
 interface EditRatePageProps {
   params: Promise<{ slug: string; id: string }>
@@ -28,7 +64,8 @@ export default function EditRatePage({ params }: EditRatePageProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [rate, setRate] = useState<RoomRate | null>(null)
-  const [formData, setFormData] = useState({
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formData, setFormData] = useState<UpdateRateData>({
     name: "",
     baseRate: 0,
     validFrom: "",
@@ -55,11 +92,33 @@ export default function EditRatePage({ params }: EditRatePageProps) {
   useEffect(() => {
     const loadRate = async () => {
       try {
-        // In real app, fetch rate by ID
-        // const { id } = await params
-        // const rateData = await getRateById(id)
-        // setRate(rateData)
-        // setFormData({ ... populate from rateData })
+        const { id } = await params
+        const response = await axios.get(`/api/rates/${id}`)
+        const rateData = response.data
+        setRate(rateData)
+        setFormData({
+          name: rateData.name,
+          baseRate: Number(rateData.baseRate),
+          validFrom: new Date(rateData.validFrom).toISOString().split('T')[0],
+          validTo: new Date(rateData.validTo).toISOString().split('T')[0],
+          description: rateData.description || "",
+          currency: rateData.currency,
+          monday: rateData.monday,
+          tuesday: rateData.tuesday,
+          wednesday: rateData.wednesday,
+          thursday: rateData.thursday,
+          friday: rateData.friday,
+          saturday: rateData.saturday,
+          sunday: rateData.sunday,
+          minStay: rateData.minStay || 1,
+          maxStay: rateData.maxStay || 0,
+          minAdvance: rateData.minAdvance || 0,
+          maxAdvance: rateData.maxAdvance || 0,
+          extraPersonRate: Number(rateData.extraPersonRate) || 0,
+          childRate: Number(rateData.childRate) || 0,
+          isActive: rateData.isActive,
+          priority: rateData.priority || 0
+        })
       } catch (error) {
         console.error('Failed to load rate:', error)
         router.back()
@@ -73,20 +132,29 @@ export default function EditRatePage({ params }: EditRatePageProps) {
     if (!rate) return
     
     setIsLoading(true)
+    setErrors({})
+    
     try {
-      await updateRate(rate.id, {
-        ...formData,
-        validFrom: new Date(formData.validFrom).toISOString(),
-        validTo: new Date(formData.validTo).toISOString(),
-        maxStay: formData.maxStay || null,
-        minAdvance: formData.minAdvance || null,
-        maxAdvance: formData.maxAdvance || null,
-        extraPersonRate: formData.extraPersonRate || null,
-        childRate: formData.childRate || null
-      })
-      router.back()
+      const validatedData = updateRateSchema.parse(formData)
+      const { id } = await params
+      
+      const response = await axios.patch(`/api/rates/${id}`, validatedData)
+      
+      if (response.status === 200) {
+        router.back()
+      }
     } catch (error) {
       console.error('Failed to update rate:', error)
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {}
+        error.issues.forEach((issue) => {
+          const path = issue.path.join('.')
+          fieldErrors[path] = issue.message
+        })
+        setErrors(fieldErrors)
+      } else if (axios.isAxiosError(error)) {
+        setErrors({ general: error.response?.data?.error || 'Failed to update rate' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -97,12 +165,23 @@ export default function EditRatePage({ params }: EditRatePageProps) {
     
     setIsLoading(true)
     try {
-      await deleteRate(rate.id)
+      const { id } = await params
+      await axios.delete(`/api/rates/${id}`)
       router.back()
     } catch (error) {
       console.error('Failed to delete rate:', error)
       setIsLoading(false)
     }
+  }
+
+  const getError = (field: string) => errors[field]
+
+  if (!rate) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -145,6 +224,23 @@ export default function EditRatePage({ params }: EditRatePageProps) {
         </div>
       </div>
 
+      {/* Error Summary */}
+      {Object.keys(errors).length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please fix the following errors:
+            <ul className="mt-2 list-disc list-inside">
+              {Object.entries(errors).map(([field, error]) => (
+                <li key={field} className="text-sm">
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -167,9 +263,11 @@ export default function EditRatePage({ params }: EditRatePageProps) {
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Standard Rate"
-                      className="h-12"
-                      required
+                      className={`h-12 ${getError('name') ? 'border-red-500' : ''}`}
                     />
+                    {getError('name') && (
+                      <p className="text-sm text-red-600">{getError('name')}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -182,11 +280,13 @@ export default function EditRatePage({ params }: EditRatePageProps) {
                       value={formData.baseRate}
                       onChange={(e) => setFormData(prev => ({ ...prev, baseRate: parseFloat(e.target.value) || 0 }))}
                       placeholder="5000"
-                      className="h-12"
+                      className={`h-12 ${getError('baseRate') ? 'border-red-500' : ''}`}
                       min="0"
                       step="0.01"
-                      required
                     />
+                    {getError('baseRate') && (
+                      <p className="text-sm text-red-600">{getError('baseRate')}</p>
+                    )}
                   </div>
                 </div>
 
@@ -213,9 +313,11 @@ export default function EditRatePage({ params }: EditRatePageProps) {
                       type="date"
                       value={formData.validFrom}
                       onChange={(e) => setFormData(prev => ({ ...prev, validFrom: e.target.value }))}
-                      className="h-12"
-                      required
+                      className={`h-12 ${getError('validFrom') ? 'border-red-500' : ''}`}
                     />
+                    {getError('validFrom') && (
+                      <p className="text-sm text-red-600">{getError('validFrom')}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -227,9 +329,11 @@ export default function EditRatePage({ params }: EditRatePageProps) {
                       type="date"
                       value={formData.validTo}
                       onChange={(e) => setFormData(prev => ({ ...prev, validTo: e.target.value }))}
-                      className="h-12"
-                      required
+                      className={`h-12 ${getError('validTo') ? 'border-red-500' : ''}`}
                     />
+                    {getError('validTo') && (
+                      <p className="text-sm text-red-600">{getError('validTo')}</p>
+                    )}
                   </div>
                 </div>
               </CardContent>

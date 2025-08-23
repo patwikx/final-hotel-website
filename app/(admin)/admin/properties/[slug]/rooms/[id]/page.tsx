@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
@@ -18,9 +19,28 @@ import {
   AlertCircle,
   Trash2
 } from "lucide-react"
-import { getRoomById, updateRoom, deleteRoom } from "@/services/room-services"
-import { getRoomTypes } from "@/services/room-type-services"
 import { Room, RoomStatus, HousekeepingStatus, RoomType_Model } from "@prisma/client"
+import { z } from "zod"
+import axios from "axios"
+
+// Zod schema for validation
+const updateRoomSchema = z.object({
+  roomTypeId: z.string().uuid().optional(),
+  roomNumber: z.string().min(1, "Room number is required").optional(),
+  floor: z.number().int().optional(),
+  wing: z.string().optional(),
+  status: z.nativeEnum(RoomStatus).optional(),
+  housekeeping: z.nativeEnum(HousekeepingStatus).optional(),
+  lastCleaned: z.string().datetime().optional().nullable(),
+  lastInspected: z.string().datetime().optional().nullable(),
+  lastMaintenance: z.string().datetime().optional().nullable(),
+  outOfOrderUntil: z.string().datetime().optional().nullable(),
+  notes: z.string().optional(),
+  specialFeatures: z.array(z.string()).optional(),
+  isActive: z.boolean().optional()
+})
+
+type UpdateRoomData = z.infer<typeof updateRoomSchema>
 
 interface EditRoomPageProps {
   params: Promise<{ slug: string; id: string }>
@@ -31,36 +51,41 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [room, setRoom] = useState<Room | null>(null)
   const [roomTypes, setRoomTypes] = useState<RoomType_Model[]>([])
-  const [formData, setFormData] = useState({
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formData, setFormData] = useState<UpdateRoomData>({
     roomTypeId: "",
     roomNumber: "",
     floor: 0,
     wing: "",
-    status: "AVAILABLE" as RoomStatus,
-    housekeeping: "CLEAN" as HousekeepingStatus,
+    status: "AVAILABLE",
+    housekeeping: "CLEAN",
     lastCleaned: "",
     lastInspected: "",
     lastMaintenance: "",
     outOfOrderUntil: "",
     notes: "",
-    specialFeatures: [] as string[],
+    specialFeatures: [],
     isActive: true
   })
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const { id } = await params
-        const [roomData, roomTypesData] = await Promise.all([
-          getRoomById(id),
-          getRoomTypes("mock-business-unit-id") // In real app, get from slug
+        const { slug, id } = await params
+        
+        // Load room data and room types in parallel
+        const [roomResponse, roomTypesResponse] = await Promise.all([
+          axios.get(`/api/properties/${slug}/rooms/${id}`),
+          axios.get(`/api/properties/${slug}/room-types`)
         ])
         
+        const roomData = roomResponse.data
         setRoom(roomData)
-        setRoomTypes(roomTypesData)
+        setRoomTypes(roomTypesResponse.data)
+        
         setFormData({
-          roomTypeId: roomData.roomTypeId,
-          roomNumber: roomData.roomNumber,
+          roomTypeId: roomData.roomTypeId || "",
+          roomNumber: roomData.roomNumber || "",
           floor: roomData.floor || 0,
           wing: roomData.wing || "",
           status: roomData.status,
@@ -71,7 +96,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
           outOfOrderUntil: roomData.outOfOrderUntil ? new Date(roomData.outOfOrderUntil).toISOString().split('T')[0] : "",
           notes: roomData.notes || "",
           specialFeatures: roomData.specialFeatures || [],
-          isActive: roomData.isActive
+          isActive: roomData.isActive ?? true
         })
       } catch (error) {
         console.error('Failed to load room data:', error)
@@ -86,17 +111,29 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
     if (!room) return
     
     setIsLoading(true)
+    setErrors({})
+    
     try {
-      await updateRoom(room.id, {
-        ...formData,
-        lastCleaned: formData.lastCleaned ? new Date(formData.lastCleaned).toISOString() : null,
-        lastInspected: formData.lastInspected ? new Date(formData.lastInspected).toISOString() : null,
-        lastMaintenance: formData.lastMaintenance ? new Date(formData.lastMaintenance).toISOString() : null,
-        outOfOrderUntil: formData.outOfOrderUntil ? new Date(formData.outOfOrderUntil).toISOString() : null
-      })
-      router.back()
+      const validatedData = updateRoomSchema.parse(formData)
+      const { slug, id } = await params
+      
+      const response = await axios.patch(`/api/properties/${slug}/rooms/${id}`, validatedData)
+      
+      if (response.status === 200) {
+        router.back()
+      }
     } catch (error) {
       console.error('Failed to update room:', error)
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {}
+        error.issues.forEach((issue) => {
+          const path = issue.path.join('.')
+          fieldErrors[path] = issue.message
+        })
+        setErrors(fieldErrors)
+      } else if (axios.isAxiosError(error)) {
+        setErrors({ general: error.response?.data?.error || 'Failed to update room' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -107,13 +144,16 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
     
     setIsLoading(true)
     try {
-      await deleteRoom(room.id)
+      const { slug, id } = await params
+      await axios.delete(`/api/properties/${slug}/rooms/${id}`)
       router.back()
     } catch (error) {
       console.error('Failed to delete room:', error)
       setIsLoading(false)
     }
   }
+
+  const getError = (field: string) => errors[field]
 
   if (!room) {
     return (
@@ -163,6 +203,23 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
         </div>
       </div>
 
+      {/* Error Summary */}
+      {Object.keys(errors).length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please fix the following errors:
+            <ul className="mt-2 list-disc list-inside">
+              {Object.entries(errors).map(([field, error]) => (
+                <li key={field} className="text-sm">
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -182,19 +239,24 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     </Label>
                     <Input
                       id="roomNumber"
-                      value={formData.roomNumber}
+                      value={formData.roomNumber || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, roomNumber: e.target.value }))}
                       placeholder="101"
-                      className="h-12"
-                      required
+                      className={`h-12 ${getError('roomNumber') ? 'border-red-500' : ''}`}
                     />
+                    {getError('roomNumber') && (
+                      <p className="text-sm text-red-600">{getError('roomNumber')}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="roomTypeId" className="text-sm font-semibold text-slate-700">
                       Room Type *
                     </Label>
-                    <Select value={formData.roomTypeId} onValueChange={(value) => setFormData(prev => ({ ...prev, roomTypeId: value }))}>
+                    <Select 
+                      value={formData.roomTypeId || ""} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, roomTypeId: value }))}
+                    >
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Select room type" />
                       </SelectTrigger>
@@ -217,7 +279,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     <Input
                       id="floor"
                       type="number"
-                      value={formData.floor}
+                      value={formData.floor || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, floor: parseInt(e.target.value) || 0 }))}
                       placeholder="1"
                       className="h-12"
@@ -231,7 +293,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     </Label>
                     <Input
                       id="wing"
-                      value={formData.wing}
+                      value={formData.wing || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, wing: e.target.value }))}
                       placeholder="North Wing"
                       className="h-12"
@@ -245,7 +307,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                   </Label>
                   <Textarea
                     id="notes"
-                    value={formData.notes}
+                    value={formData.notes || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     placeholder="Any special notes about this room..."
                     className="h-24"
@@ -271,7 +333,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     <Input
                       id="lastCleaned"
                       type="date"
-                      value={formData.lastCleaned}
+                      value={formData.lastCleaned || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, lastCleaned: e.target.value }))}
                       className="h-12"
                     />
@@ -284,7 +346,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     <Input
                       id="lastInspected"
                       type="date"
-                      value={formData.lastInspected}
+                      value={formData.lastInspected || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, lastInspected: e.target.value }))}
                       className="h-12"
                     />
@@ -299,7 +361,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     <Input
                       id="lastMaintenance"
                       type="date"
-                      value={formData.lastMaintenance}
+                      value={formData.lastMaintenance || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, lastMaintenance: e.target.value }))}
                       className="h-12"
                     />
@@ -312,7 +374,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     <Input
                       id="outOfOrderUntil"
                       type="date"
-                      value={formData.outOfOrderUntil}
+                      value={formData.outOfOrderUntil || ""}
                       onChange={(e) => setFormData(prev => ({ ...prev, outOfOrderUntil: e.target.value }))}
                       className="h-12"
                     />
@@ -335,7 +397,10 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700">Room Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as RoomStatus }))}>
+                  <Select 
+                    value={formData.status || "AVAILABLE"} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as RoomStatus }))}
+                  >
                     <SelectTrigger className="h-12">
                       <SelectValue />
                     </SelectTrigger>
@@ -350,7 +415,10 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700">Housekeeping Status</Label>
-                  <Select value={formData.housekeeping} onValueChange={(value) => setFormData(prev => ({ ...prev, housekeeping: value as HousekeepingStatus }))}>
+                  <Select 
+                    value={formData.housekeeping || "CLEAN"} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, housekeeping: value as HousekeepingStatus }))}
+                  >
                     <SelectTrigger className="h-12">
                       <SelectValue />
                     </SelectTrigger>
@@ -369,7 +437,7 @@ export default function EditRoomPage({ params }: EditRoomPageProps) {
                     <p className="text-xs text-slate-500">Room is operational</p>
                   </div>
                   <Switch 
-                    checked={formData.isActive}
+                    checked={formData.isActive ?? true}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isActive: checked }))}
                   />
                 </div>

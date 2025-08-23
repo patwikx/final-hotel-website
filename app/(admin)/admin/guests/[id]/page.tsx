@@ -18,7 +18,6 @@ import {
   ArrowLeft, 
   User, 
   Calendar,
-  CreditCard,
   Star,
   Phone,
   Mail,
@@ -29,28 +28,35 @@ import {
 import Link from "next/link"
 import { Guest, Reservation } from "@prisma/client"
 
+
 interface GuestDetailPageProps {
   params: Promise<{ id: string }>
 }
 
-type GuestWithReservations = Guest & {
+interface GuestWithReservations extends Guest {
   reservations: Reservation[];
 }
 
 export default function GuestDetailPage({ params }: GuestDetailPageProps) {
   const router = useRouter()
   const [guest, setGuest] = useState<GuestWithReservations | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const loadGuest = async () => {
       try {
-        // In real app, fetch guest by ID with reservations
-        // const { id } = await params
-        // const guestData = await getGuestById(id)
-        // setGuest(guestData)
+        const { id } = await params
+        const response = await fetch(`/api/guests/${id}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch guest')
+        }
+        const guestData: GuestWithReservations = await response.json()
+        setGuest(guestData)
       } catch (error) {
         console.error('Failed to load guest:', error)
         router.push('/admin/guests')
+      } finally {
+        setIsLoading(false)
       }
     }
     loadGuest()
@@ -67,7 +73,7 @@ export default function GuestDetailPage({ params }: GuestDetailPageProps) {
     }
   }
 
-  if (!guest) {
+  if (isLoading || !guest) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />

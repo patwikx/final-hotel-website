@@ -28,7 +28,6 @@ import {
   Settings, 
   LogOut, 
   Command,
-  Plus,
   Calendar,
   FileText,
   Building
@@ -130,13 +129,6 @@ export function AdminHeader() {
           {/* Quick Actions */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                size="sm" 
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg hover:shadow-amber-500/25 transition-all duration-300"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Quick Add
-              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>

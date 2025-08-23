@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
@@ -19,59 +20,82 @@ import {
   Trash2,
   AlertCircle
 } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getRoomTypeById, updateRoomType, deleteRoomType } from "@/services/room-type-services"
-import { RoomType_Model, RoomType } from "@prisma/client"
-import { Decimal } from "@prisma/client/runtime/library"
+import { RoomType, RoomType_Model } from "@prisma/client"
 import { z } from "zod"
+import axios from "axios"
 
-// Zod validation schema
-const roomTypeSchema = z.object({
-  name: z.string().min(1, "Internal name is required").max(50, "Name too long"),
-  displayName: z.string().min(1, "Display name is required").max(100, "Display name too long"),
-  type: z.nativeEnum(RoomType),
-  baseRate: z.number().min(0, "Base rate must be positive"),
+// Zod schema for validation
+const updateRoomTypeSchema = z.object({
+  name: z.string()
+    .min(1, "Name is required")
+    .max(100, "Name must be less than 100 characters")
+    .regex(/^[a-z0-9-]+$/, "Name must be lowercase letters, numbers, and hyphens only")
+    .optional(),
+  displayName: z.string()
+    .min(1, "Display name is required")
+    .max(200, "Display name must be less than 200 characters")
+    .optional(),
+  type: z.nativeEnum(RoomType).optional(),
+  baseRate: z.number()
+    .min(0.01, "Base rate must be greater than 0")
+    .max(999999.99, "Base rate is too high")
+    .optional(),
   description: z.string().optional(),
-  maxOccupancy: z.number().int().min(1, "Must accommodate at least 1 person"),
-  maxAdults: z.number().int().min(1, "Must accommodate at least 1 adult"),
-  maxChildren: z.number().int().min(0, "Cannot be negative"),
-  maxInfants: z.number().int().min(0, "Cannot be negative"),
+  maxOccupancy: z.number()
+    .int("Max occupancy must be a whole number")
+    .min(1, "Max occupancy must be at least 1")
+    .max(20, "Max occupancy cannot exceed 20")
+    .optional(),
+  maxAdults: z.number()
+    .int("Max adults must be a whole number")
+    .min(1, "Max adults must be at least 1")
+    .max(20, "Max adults cannot exceed 20")
+    .optional(),
+  maxChildren: z.number()
+    .int("Max children must be a whole number")
+    .min(0, "Max children cannot be negative")
+    .max(20, "Max children cannot exceed 20")
+    .optional(),
+  maxInfants: z.number()
+    .int("Max infants must be a whole number")
+    .min(0, "Max infants cannot be negative")
+    .max(10, "Max infants cannot exceed 10")
+    .optional(),
   bedConfiguration: z.string().optional(),
-  roomSize: z.number().min(0, "Room size cannot be negative").optional(),
-  hasBalcony: z.boolean(),
-  hasOceanView: z.boolean(),
-  hasPoolView: z.boolean(),
-  hasKitchenette: z.boolean(),
-  hasLivingArea: z.boolean(),
-  smokingAllowed: z.boolean(),
-  petFriendly: z.boolean(),
-  isAccessible: z.boolean(),
-  extraPersonRate: z.number().min(0, "Cannot be negative"),
-  extraChildRate: z.number().min(0, "Cannot be negative"),
-  primaryImage: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  images: z.array(z.string().url()).default([]),
-  floorPlan: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  isActive: z.boolean(),
-  sortOrder: z.number().int().min(0, "Cannot be negative")
-}).refine(data => data.maxOccupancy >= data.maxAdults, {
-  message: "Max occupancy must be at least equal to max adults",
-  path: ["maxOccupancy"]
-})
+  roomSize: z.number()
+    .min(0, "Room size cannot be negative")
+    .max(10000, "Room size is too large")
+    .optional(),
+  hasBalcony: z.boolean().optional(),
+  hasOceanView: z.boolean().optional(),
+  hasPoolView: z.boolean().optional(),
+  hasKitchenette: z.boolean().optional(),
+  hasLivingArea: z.boolean().optional(),
+  smokingAllowed: z.boolean().optional(),
+  petFriendly: z.boolean().optional(),
+  isAccessible: z.boolean().optional(),
+  extraPersonRate: z.number()
+    .min(0, "Extra person rate cannot be negative")
+    .max(999999.99, "Extra person rate is too high")
+    .optional(),
+  extraChildRate: z.number()
+    .min(0, "Extra child rate cannot be negative")
+    .max(999999.99, "Extra child rate is too high")
+    .optional(),
+  primaryImage: z.string().url("Invalid image URL").optional().or(z.literal("")),
+  images: z.array(z.string().url("Invalid image URL")).optional(),
+  floorPlan: z.string().url("Invalid floor plan URL").optional().or(z.literal("")),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int("Sort order must be a whole number").min(0).optional()
+}).refine(
+  (data) => !data.maxOccupancy || !data.maxAdults || !data.maxChildren || data.maxOccupancy >= data.maxAdults + data.maxChildren,
+  {
+    message: "Max occupancy must be at least the sum of max adults and max children",
+    path: ["maxOccupancy"]
+  }
+)
 
-type RoomTypeFormData = z.infer<typeof roomTypeSchema>
-
-// Helper function to convert form data for API submission
-const prepareFormDataForApi = (formData: RoomTypeFormData) => ({
-  ...formData,
-  baseRate: new Decimal(formData.baseRate),
-  roomSize: formData.roomSize ? new Decimal(formData.roomSize) : null,
-  extraPersonRate: new Decimal(formData.extraPersonRate),
-  extraChildRate: new Decimal(formData.extraChildRate),
-  description: formData.description || null,
-  bedConfiguration: formData.bedConfiguration || null,
-  primaryImage: formData.primaryImage || null,
-  floorPlan: formData.floorPlan || null
-})
+type UpdateRoomTypeData = z.infer<typeof updateRoomTypeSchema>
 
 interface EditRoomTypePageProps {
   params: Promise<{ slug: string; id: string }>
@@ -82,10 +106,10 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [roomType, setRoomType] = useState<RoomType_Model | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [formData, setFormData] = useState<RoomTypeFormData>({
+  const [formData, setFormData] = useState<UpdateRoomTypeData>({
     name: "",
     displayName: "",
-    type: "STANDARD" as RoomType,
+    type: "STANDARD",
     baseRate: 0,
     description: "",
     maxOccupancy: 2,
@@ -114,8 +138,9 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
   useEffect(() => {
     const loadRoomType = async () => {
       try {
-        const { id } = await params
-        const roomTypeData = await getRoomTypeById(id)
+        const { slug, id } = await params
+        const response = await axios.get(`/api/properties/${slug}/room-types/${id}`)
+        const roomTypeData = response.data
         setRoomType(roomTypeData)
         setFormData({
           name: roomTypeData.name,
@@ -153,41 +178,34 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
     loadRoomType()
   }, [params, router])
 
-  // Validate form data
-  const validateForm = () => {
-    try {
-      roomTypeSchema.parse(formData)
-      setErrors({})
-      return true
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {}
-        error.issues.forEach((issue) => {
-          const path = issue.path.join('.')
-          newErrors[path] = issue.message
-        })
-        setErrors(newErrors)
-      }
-      return false
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!roomType) return
     
-    if (!validateForm()) {
-      return
-    }
-    
     setIsLoading(true)
+    setErrors({})
+    
     try {
-      const apiData = prepareFormDataForApi(formData)
-      await updateRoomType(roomType.id, apiData)
-      router.back()
+      const validatedData = updateRoomTypeSchema.parse(formData)
+      const { slug, id } = await params
+      
+      const response = await axios.patch(`/api/properties/${slug}/room-types/${id}`, validatedData)
+      
+      if (response.status === 200) {
+        router.back()
+      }
     } catch (error) {
       console.error('Failed to update room type:', error)
-      // You might want to show an error message to the user here
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {}
+        error.issues.forEach((issue) => {
+          const path = issue.path.join('.')
+          fieldErrors[path] = issue.message
+        })
+        setErrors(fieldErrors)
+      } else if (axios.isAxiosError(error)) {
+        setErrors({ general: error.response?.data?.error || 'Failed to update room type' })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -198,7 +216,8 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
     
     setIsLoading(true)
     try {
-      await deleteRoomType(roomType.id)
+      const { slug, id } = await params
+      await axios.delete(`/api/properties/${slug}/room-types/${id}`)
       router.back()
     } catch (error) {
       console.error('Failed to delete room type:', error)
@@ -206,7 +225,6 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
     }
   }
 
-  // Helper function to get error message for a field
   const getError = (field: string) => errors[field]
 
   if (!roomType) {
@@ -257,15 +275,17 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
         </div>
       </div>
 
-      {/* Show validation errors */}
+      {/* Error Summary */}
       {Object.keys(errors).length > 0 && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Please fix the following errors:
             <ul className="mt-2 list-disc list-inside">
-              {Object.values(errors).map((error, index) => (
-                <li key={index}>{error}</li>
+              {Object.entries(errors).map(([field, error]) => (
+                <li key={field} className="text-sm">
+                  {error}
+                </li>
               ))}
             </ul>
           </AlertDescription>
@@ -295,10 +315,9 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="deluxe-king"
                       className={`h-12 ${getError('name') ? 'border-red-500' : ''}`}
-                      required
                     />
                     {getError('name') && (
-                      <p className="text-sm text-red-500">{getError('name')}</p>
+                      <p className="text-sm text-red-600">{getError('name')}</p>
                     )}
                   </div>
 
@@ -312,10 +331,9 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                       placeholder="Deluxe King Room"
                       className={`h-12 ${getError('displayName') ? 'border-red-500' : ''}`}
-                      required
                     />
                     {getError('displayName') && (
-                      <p className="text-sm text-red-500">{getError('displayName')}</p>
+                      <p className="text-sm text-red-600">{getError('displayName')}</p>
                     )}
                   </div>
                 </div>
@@ -325,7 +343,10 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     <Label htmlFor="type" className="text-sm font-semibold text-slate-700">
                       Room Category *
                     </Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as RoomType }))}>
+                    <Select 
+                      value={formData.type} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as RoomType }))}
+                    >
                       <SelectTrigger className={`h-12 ${getError('type') ? 'border-red-500' : ''}`}>
                         <SelectValue />
                       </SelectTrigger>
@@ -340,7 +361,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       </SelectContent>
                     </Select>
                     {getError('type') && (
-                      <p className="text-sm text-red-500">{getError('type')}</p>
+                      <p className="text-sm text-red-600">{getError('type')}</p>
                     )}
                   </div>
 
@@ -357,10 +378,9 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       className={`h-12 ${getError('baseRate') ? 'border-red-500' : ''}`}
                       min="0"
                       step="0.01"
-                      required
                     />
                     {getError('baseRate') && (
-                      <p className="text-sm text-red-500">{getError('baseRate')}</p>
+                      <p className="text-sm text-red-600">{getError('baseRate')}</p>
                     )}
                   </div>
                 </div>
@@ -377,7 +397,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     className={`h-24 ${getError('description') ? 'border-red-500' : ''}`}
                   />
                   {getError('description') && (
-                    <p className="text-sm text-red-500">{getError('description')}</p>
+                    <p className="text-sm text-red-600">{getError('description')}</p>
                   )}
                 </div>
 
@@ -391,11 +411,8 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       value={formData.bedConfiguration}
                       onChange={(e) => setFormData(prev => ({ ...prev, bedConfiguration: e.target.value }))}
                       placeholder="1 King Bed"
-                      className={`h-12 ${getError('bedConfiguration') ? 'border-red-500' : ''}`}
+                      className="h-12"
                     />
-                    {getError('bedConfiguration') && (
-                      <p className="text-sm text-red-500">{getError('bedConfiguration')}</p>
-                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -412,7 +429,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       min="0"
                     />
                     {getError('roomSize') && (
-                      <p className="text-sm text-red-500">{getError('roomSize')}</p>
+                      <p className="text-sm text-red-600">{getError('roomSize')}</p>
                     )}
                   </div>
 
@@ -428,10 +445,9 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       placeholder="2"
                       className={`h-12 ${getError('maxOccupancy') ? 'border-red-500' : ''}`}
                       min="1"
-                      required
                     />
                     {getError('maxOccupancy') && (
-                      <p className="text-sm text-red-500">{getError('maxOccupancy')}</p>
+                      <p className="text-sm text-red-600">{getError('maxOccupancy')}</p>
                     )}
                   </div>
                 </div>
@@ -449,10 +465,9 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       placeholder="2"
                       className={`h-12 ${getError('maxAdults') ? 'border-red-500' : ''}`}
                       min="1"
-                      required
                     />
                     {getError('maxAdults') && (
-                      <p className="text-sm text-red-500">{getError('maxAdults')}</p>
+                      <p className="text-sm text-red-600">{getError('maxAdults')}</p>
                     )}
                   </div>
 
@@ -465,12 +480,12 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       type="number"
                       value={formData.maxChildren}
                       onChange={(e) => setFormData(prev => ({ ...prev, maxChildren: parseInt(e.target.value) || 0 }))}
-                      placeholder="2"
+                      placeholder="0"
                       className={`h-12 ${getError('maxChildren') ? 'border-red-500' : ''}`}
                       min="0"
                     />
                     {getError('maxChildren') && (
-                      <p className="text-sm text-red-500">{getError('maxChildren')}</p>
+                      <p className="text-sm text-red-600">{getError('maxChildren')}</p>
                     )}
                   </div>
 
@@ -483,12 +498,12 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                       type="number"
                       value={formData.maxInfants}
                       onChange={(e) => setFormData(prev => ({ ...prev, maxInfants: parseInt(e.target.value) || 0 }))}
-                      placeholder="1"
+                      placeholder="0"
                       className={`h-12 ${getError('maxInfants') ? 'border-red-500' : ''}`}
                       min="0"
                     />
                     {getError('maxInfants') && (
-                      <p className="text-sm text-red-500">{getError('maxInfants')}</p>
+                      <p className="text-sm text-red-600">{getError('maxInfants')}</p>
                     )}
                   </div>
                 </div>
@@ -612,7 +627,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                   <Label className="text-sm font-semibold text-slate-700">Extra Person Rate (₱)</Label>
                   <Input
                     type="number"
-                    value={formData.extraPersonRate}
+                    value={formData.extraPersonRate || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, extraPersonRate: parseFloat(e.target.value) || 0 }))}
                     placeholder="1000"
                     className={`h-12 ${getError('extraPersonRate') ? 'border-red-500' : ''}`}
@@ -620,7 +635,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     step="0.01"
                   />
                   {getError('extraPersonRate') && (
-                    <p className="text-sm text-red-500">{getError('extraPersonRate')}</p>
+                    <p className="text-sm text-red-600">{getError('extraPersonRate')}</p>
                   )}
                 </div>
 
@@ -628,7 +643,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                   <Label className="text-sm font-semibold text-slate-700">Extra Child Rate (₱)</Label>
                   <Input
                     type="number"
-                    value={formData.extraChildRate}
+                    value={formData.extraChildRate || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, extraChildRate: parseFloat(e.target.value) || 0 }))}
                     placeholder="500"
                     className={`h-12 ${getError('extraChildRate') ? 'border-red-500' : ''}`}
@@ -636,7 +651,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     step="0.01"
                   />
                   {getError('extraChildRate') && (
-                    <p className="text-sm text-red-500">{getError('extraChildRate')}</p>
+                    <p className="text-sm text-red-600">{getError('extraChildRate')}</p>
                   )}
                 </div>
               </CardContent>
@@ -673,7 +688,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     min="0"
                   />
                   {getError('sortOrder') && (
-                    <p className="text-sm text-red-500">{getError('sortOrder')}</p>
+                    <p className="text-sm text-red-600">{getError('sortOrder')}</p>
                   )}
                 </div>
               </CardContent>
@@ -697,7 +712,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     className={`h-12 ${getError('primaryImage') ? 'border-red-500' : ''}`}
                   />
                   {getError('primaryImage') && (
-                    <p className="text-sm text-red-500">{getError('primaryImage')}</p>
+                    <p className="text-sm text-red-600">{getError('primaryImage')}</p>
                   )}
                 </div>
 
@@ -710,7 +725,7 @@ export default function EditRoomTypePage({ params }: EditRoomTypePageProps) {
                     className={`h-12 ${getError('floorPlan') ? 'border-red-500' : ''}`}
                   />
                   {getError('floorPlan') && (
-                    <p className="text-sm text-red-500">{getError('floorPlan')}</p>
+                    <p className="text-sm text-red-600">{getError('floorPlan')}</p>
                   )}
                 </div>
               </CardContent>

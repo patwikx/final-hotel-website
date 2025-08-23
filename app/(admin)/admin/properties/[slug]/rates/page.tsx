@@ -59,7 +59,8 @@ export default async function RatesPage({ params }: RatesPageProps) {
   const allRates = property.roomTypes.flatMap(rt => 
     rt.rates.map(rate => ({
       ...rate,
-      roomTypeName: rt.displayName
+      roomTypeName: rt.displayName,
+      roomTypeId: rt.id
     }))
   )
 

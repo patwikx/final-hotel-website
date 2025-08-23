@@ -55,8 +55,9 @@ export function RoomTypesSection({ property, roomTypes }: RoomTypesSectionProps)
           <h2 className="text-2xl font-bold text-slate-900 font-serif">Room Types</h2>
           <p className="text-slate-600">Manage accommodation categories and pricing</p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-          <Link href={`/admin/properties/${property.id}/room-types/new`}>
+<Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
+          {/* CORRECTED: Use property.slug for the "new" route */}
+          <Link href={`/admin/properties/${property.slug}/room-types/new`}>
             <Plus className="h-4 w-4 mr-2" />
             Add Room Type
           </Link>
@@ -175,7 +176,7 @@ export function RoomTypesSection({ property, roomTypes }: RoomTypesSectionProps)
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4 text-slate-400" />
-                        <span className="text-sm text-slate-700">Up to {roomType.maxOccupancy}</span>
+                        <span className="text-sm text-slate-700">Up to {roomType.maxOccupancy || 2}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -198,7 +199,7 @@ export function RoomTypesSection({ property, roomTypes }: RoomTypesSectionProps)
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/admin/properties/${property.id}/room-types/${roomType.id}`}>
+                            <Link href={`/admin/properties/${property.slug}/room-types/${roomType.id}`}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </Link>
@@ -228,7 +229,7 @@ export function RoomTypesSection({ property, roomTypes }: RoomTypesSectionProps)
               <h3 className="text-xl font-semibold text-slate-900 mb-2">No room types yet</h3>
               <p className="text-slate-600 mb-6">Create your first room type to start accepting bookings.</p>
               <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-                <Link href={`/admin/properties/${property.id}/room-types/new`}>
+                <Link href={`/admin/properties/${property.slug}/room-types/new`}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Room Type
                 </Link>

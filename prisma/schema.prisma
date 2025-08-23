@@ -387,16 +387,16 @@ model BusinessUnit {
   website    String?
 
   // Coordinates for mapping
-  latitude  Decimal? @db.Decimal(10, 8)
-  longitude Decimal? @db.Decimal(11, 8)
+  latitude  Float?
+  longitude Float?
 
   // Business Settings
-  primaryCurrency   String   @default("PHP")
+  primaryCurrency   String  @default("PHP")
   secondaryCurrency String?
-  timezone          String   @default("Asia/Manila")
-  locale            String   @default("en")
-  taxRate           Decimal? @db.Decimal(5, 4)
-  serviceFeeRate    Decimal? @db.Decimal(5, 4)
+  timezone          String  @default("Asia/Manila")
+  locale            String  @default("en")
+  taxRate           Float?
+  serviceFeeRate    Float?
 
   // Branding & Media - UPDATED for CMS
   logo           String?

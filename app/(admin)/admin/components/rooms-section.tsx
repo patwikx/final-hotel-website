@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { 
   Table, 
   TableBody, 
@@ -20,17 +19,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { 
   Plus, 
-  Search,
   MoreHorizontal, 
   Edit, 
   Eye, 
   Trash2, 
   Bed,
-  Building,
   CheckCircle,
   AlertCircle,
   Clock,
-  Wrench
+  Wrench,
 } from "lucide-react"
 import { BusinessUnit, Room, RoomType_Model } from "@prisma/client"
 import Link from "next/link"
@@ -64,7 +61,7 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
   const getRoomStatusIcon = (status: string) => {
     switch (status) {
       case 'AVAILABLE': return CheckCircle
-      case 'OCCUPIED': return Building
+      case 'OCCUPIED': return Bed
       case 'OUT_OF_ORDER': return AlertCircle
       case 'MAINTENANCE': return Wrench
       default: return Clock
@@ -87,14 +84,14 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
           <p className="text-slate-600">Manage individual room inventory and status</p>
         </div>
         <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-          <Link href={`/admin/properties/${property.id}/rooms/new`}>
+          <Link href={`/admin/properties/${property.slug}/rooms/new`}>
             <Plus className="h-4 w-4 mr-2" />
             Add Room
           </Link>
         </Button>
       </div>
 
-      {/* Room Status Overview */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-0 shadow-md">
           <CardContent className="p-6">
@@ -114,7 +111,7 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Building className="h-6 w-6 text-blue-600" />
+                <Bed className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-slate-900">{roomsByStatus.occupied}</p>
@@ -156,18 +153,7 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
       {/* Rooms Table */}
       <Card className="border-0 shadow-lg">
         <CardHeader className="border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Rooms</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input 
-                  placeholder="Search rooms..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
-                />
-              </div>
-            </div>
-          </div>
+          <CardTitle className="text-xl font-bold text-slate-900">All Rooms</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {rooms.length > 0 ? (
@@ -191,13 +177,13 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
                     <TableRow key={room.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                            <span className="font-bold text-slate-700">{room.roomNumber}</span>
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
+                            <span className="font-bold text-blue-600">{room.roomNumber}</span>
                           </div>
                           <div>
                             <p className="font-semibold text-slate-900">Room {room.roomNumber}</p>
                             {room.wing && (
-                              <p className="text-sm text-slate-500">Wing {room.wing}</p>
+                              <p className="text-sm text-slate-500">{room.wing}</p>
                             )}
                           </div>
                         </div>
@@ -236,7 +222,7 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link href={`/admin/properties/${property.id}/rooms/${room.id}`}>
+                              <Link href={`/admin/properties/${property.slug}/rooms/${room.id}`}>
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit
                               </Link>
@@ -263,9 +249,9 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
                 <Bed className="h-12 w-12 text-slate-400" />
               </div>
               <h3 className="text-xl font-semibold text-slate-900 mb-2">No rooms yet</h3>
-              <p className="text-slate-600 mb-6">Add rooms to start managing your inventory.</p>
+              <p className="text-slate-600 mb-6">Create your first room to start managing inventory.</p>
               <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-                <Link href={`/admin/properties/${property.id}/rooms/new`}>
+                <Link href={`/admin/properties/${property.slug}/rooms/new`}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Room
                 </Link>

@@ -9,15 +9,33 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
   Bed, 
-  Settings
+  Settings,
+  AlertCircle
 } from "lucide-react"
-import { createRoom } from "@/services/room-services"
-import { getRoomTypes } from "@/services/room-type-services"
 import { RoomStatus, HousekeepingStatus, RoomType_Model } from "@prisma/client"
+import { z } from "zod"
+import axios from "axios"
+
+// Zod schema for validation
+const createRoomSchema = z.object({
+  businessUnitId: z.string().uuid(),
+  roomTypeId: z.string().uuid("Please select a room type"),
+  roomNumber: z.string().min(1, "Room number is required"),
+  floor: z.number().int().optional(),
+  wing: z.string().optional(),
+  status: z.nativeEnum(RoomStatus).default('AVAILABLE'),
+  housekeeping: z.nativeEnum(HousekeepingStatus).default('CLEAN'),
+  notes: z.string().optional(),
+  specialFeatures: z.array(z.string()).default([]),
+  isActive: z.boolean().default(true)
+})
+
+type CreateRoomData = z.infer<typeof createRoomSchema>
 
 interface NewRoomPageProps {
   params: Promise<{ slug: string }>
@@ -28,54 +46,75 @@ export default function NewRoomPage({ params }: NewRoomPageProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [businessUnitId, setBusinessUnitId] = useState("")
   const [roomTypes, setRoomTypes] = useState<RoomType_Model[]>([])
-  const [formData, setFormData] = useState({
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [formData, setFormData] = useState<CreateRoomData>({
+    businessUnitId: "",
     roomTypeId: "",
     roomNumber: "",
     floor: 1,
     wing: "",
-    status: "AVAILABLE" as RoomStatus,
-    housekeeping: "CLEAN" as HousekeepingStatus,
+    status: "AVAILABLE",
+    housekeeping: "CLEAN",
     notes: "",
-    specialFeatures: [] as string[],
+    specialFeatures: [],
     isActive: true
   })
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // In real app, get business unit ID from slug
-        const mockBusinessUnitId = "mock-business-unit-id"
-        setBusinessUnitId(mockBusinessUnitId)
+        const { slug } = await params
         
-        const roomTypesData = await getRoomTypes(mockBusinessUnitId)
-        setRoomTypes(roomTypesData)
+        // Get property details
+        const propertyResponse = await axios.get(`/api/properties/${slug}`)
+        const property = propertyResponse.data
+        setBusinessUnitId(property.id)
+        
+        // Get room types for this property
+        const roomTypesResponse = await axios.get(`/api/properties/${slug}/room-types`)
+        setRoomTypes(roomTypesResponse.data)
+        
+        setFormData(prev => ({ ...prev, businessUnitId: property.id }))
       } catch (error) {
         console.error('Failed to load data:', error)
+        router.back()
       }
     }
     loadData()
-  }, [params])
+  }, [params, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrors({})
     
     try {
-      await createRoom({
-        ...formData,
-        businessUnitId,
-        lastCleaned: new Date(),
-        lastInspected: null,
-        lastMaintenance: null,
-        outOfOrderUntil: null
-      })
-      router.back()
+      const validatedData = createRoomSchema.parse(formData)
+      const { slug } = await params
+      
+      const response = await axios.post(`/api/properties/${slug}/rooms`, validatedData)
+      
+      if (response.status === 201) {
+        router.back()
+      }
     } catch (error) {
       console.error('Failed to create room:', error)
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {}
+        error.issues.forEach((issue) => {
+          const path = issue.path.join('.')
+          fieldErrors[path] = issue.message
+        })
+        setErrors(fieldErrors)
+      } else if (axios.isAxiosError(error)) {
+        setErrors({ general: error.response?.data?.error || 'Failed to create room' })
+      }
     } finally {
       setIsLoading(false)
     }
   }
+
+  const getError = (field: string) => errors[field]
 
   return (
     <div className="space-y-8">
@@ -111,6 +150,23 @@ export default function NewRoomPage({ params }: NewRoomPageProps) {
         </Button>
       </div>
 
+      {/* Error Summary */}
+      {Object.keys(errors).length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please fix the following errors:
+            <ul className="mt-2 list-disc list-inside">
+              {Object.entries(errors).map(([field, error]) => (
+                <li key={field} className="text-sm">
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -133,17 +189,22 @@ export default function NewRoomPage({ params }: NewRoomPageProps) {
                       value={formData.roomNumber}
                       onChange={(e) => setFormData(prev => ({ ...prev, roomNumber: e.target.value }))}
                       placeholder="101"
-                      className="h-12"
-                      required
+                      className={`h-12 ${getError('roomNumber') ? 'border-red-500' : ''}`}
                     />
+                    {getError('roomNumber') && (
+                      <p className="text-sm text-red-600">{getError('roomNumber')}</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="roomTypeId" className="text-sm font-semibold text-slate-700">
                       Room Type *
                     </Label>
-                    <Select value={formData.roomTypeId} onValueChange={(value) => setFormData(prev => ({ ...prev, roomTypeId: value }))}>
-                      <SelectTrigger className="h-12">
+                    <Select 
+                      value={formData.roomTypeId} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, roomTypeId: value }))}
+                    >
+                      <SelectTrigger className={`h-12 ${getError('roomTypeId') ? 'border-red-500' : ''}`}>
                         <SelectValue placeholder="Select room type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -154,6 +215,9 @@ export default function NewRoomPage({ params }: NewRoomPageProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    {getError('roomTypeId') && (
+                      <p className="text-sm text-red-600">{getError('roomTypeId')}</p>
+                    )}
                   </div>
                 </div>
 
@@ -216,7 +280,10 @@ export default function NewRoomPage({ params }: NewRoomPageProps) {
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700">Room Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as RoomStatus }))}>
+                  <Select 
+                    value={formData.status} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as RoomStatus }))}
+                  >
                     <SelectTrigger className="h-12">
                       <SelectValue />
                     </SelectTrigger>
@@ -231,7 +298,10 @@ export default function NewRoomPage({ params }: NewRoomPageProps) {
 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700">Housekeeping Status</Label>
-                  <Select value={formData.housekeeping} onValueChange={(value) => setFormData(prev => ({ ...prev, housekeeping: value as HousekeepingStatus }))}>
+                  <Select 
+                    value={formData.housekeeping} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, housekeeping: value as HousekeepingStatus }))}
+                  >
                     <SelectTrigger className="h-12">
                       <SelectValue />
                     </SelectTrigger>

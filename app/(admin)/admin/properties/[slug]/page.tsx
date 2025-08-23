@@ -20,7 +20,22 @@ import { PropertyDetailsForm } from "../../components/property-details-form"
 import { RoomTypesSection } from "../../components/room-types-section"
 import { RoomsSection } from "../../components/rooms-section"
 import { ReservationsSection } from "../../components/reservations-section"
+import { BusinessUnit, RoomType_Model, Room, Reservation, Guest } from "@prisma/client"
 
+// Define proper types for the property with relations
+type PropertyWithDetails = BusinessUnit & {
+  roomTypes: (RoomType_Model & {
+    _count: { rooms: number };
+  })[];
+  rooms: (Room & { roomType: RoomType_Model })[];
+  reservations: (Reservation & { guest: Guest })[];
+  _count: {
+    rooms: number;
+    roomTypes: number;
+    reservations: number;
+    guests: number;
+  };
+};
 
 interface PropertyDetailPageProps {
   params: Promise<{ slug: string }>
@@ -29,7 +44,7 @@ interface PropertyDetailPageProps {
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const { slug } = await params
   
-  const property = await prisma.businessUnit.findUnique({
+  const propertyData = await prisma.businessUnit.findUnique({
    where: { slug },
     include: {
       roomTypes: {
@@ -58,10 +73,12 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
     }
   })
 
-  if (!property) {
+  if (!propertyData) {
     notFound()
   }
 
+  // Serialize the data to ensure type safety
+  const property: PropertyWithDetails = JSON.parse(JSON.stringify(propertyData));
   const getPropertyTypeColor = (type: string) => {
     switch (type) {
       case 'HOTEL': return 'bg-blue-100 text-blue-800'
@@ -203,22 +220,22 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
         <TabsContent value="room-types">
           <RoomTypesSection 
-            property={JSON.parse(JSON.stringify(property))} 
-            roomTypes={JSON.parse(JSON.stringify(property.roomTypes))} 
+            property={property} 
+            roomTypes={property.roomTypes} 
           />
         </TabsContent>
 
         <TabsContent value="rooms">
           <RoomsSection 
-            property={JSON.parse(JSON.stringify(property))} 
-            rooms={JSON.parse(JSON.stringify(property.rooms))} 
+            property={property} 
+            rooms={property.rooms} 
           />
         </TabsContent>
 
         <TabsContent value="reservations">
           <ReservationsSection 
-            property={JSON.parse(JSON.stringify(property))} 
-            reservations={JSON.parse(JSON.stringify(property.reservations))} 
+            property={property} 
+            reservations={property.reservations} 
           />
         </TabsContent>
 
