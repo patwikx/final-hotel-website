@@ -70,14 +70,15 @@ export function FeedbackDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="fixed bottom-6 right-6 p-4 rounded-full shadow-lg text-slate-800 hover:bg-slate-50 transition-all duration-300 transform hover:scale-105 z-20"
-        >
-          <MessageCircleQuestion className="w-7 h-7" />
-        </Button>
-      </DialogTrigger>
+<DialogTrigger asChild>
+  <Button
+    variant="outline"
+    className="fixed bottom-6 right-6 w-[150px] h-[85px] bg-blue-200 text-blue-800 shadow-md rounded-full hover:bg-blue-300 transition-all duration-300 z-20 flex items-center justify-center gap-3"
+  >
+    <MessageCircleQuestion className="w-8 h-8 text-blue-800" />
+    <span className="text-lg font-semibold">Feedback</span>
+  </Button>
+</DialogTrigger>
       <DialogContent className="sm:max-w-lg md:max-w-2xl">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

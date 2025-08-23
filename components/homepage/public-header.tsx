@@ -8,6 +8,7 @@ import { Menu, Phone, Mail, MapPin, ChevronDown, Calendar, Star, Globe } from "l
 import { cn } from "@/lib/utils";
 import { BusinessUnit, WebsiteConfiguration } from "@prisma/client";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 interface PublicHeaderProps {
   allHotels: BusinessUnit[];
@@ -123,12 +124,12 @@ export function PublicHeader({ allHotels, websiteConfig }: PublicHeaderProps) {
               <Link href="/" className="flex items-center space-x-3 group">
                 <div className="relative">
                   <div className={cn(
-                    "w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg transition-all duration-300",
-                    "group-hover:shadow-amber-400/25 group-hover:scale-110"
+                    "flex items-center justify-center duration-300"
+                  
                   )}>
-                    <span className="text-white font-bold text-xl">T</span>
+                  <Image src="https://4b9moeer4y.ufs.sh/f/pUvyWRtocgCV0y3FUvkBwoHGKNiCbEI9uWYstSRk5rXgMLfx" height={40} width={40} alt="TWC Logo" />
                   </div>
-                  <div className="absolute -inset-1 bg-gradient-to-br from-amber-400/20 to-amber-600/20 rounded-full" />
+                  <div className="absolute -inset-1 bg-gradient-to-br rounded-full" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-2xl font-bold font-serif text-slate-900 transition-colors duration-300">
