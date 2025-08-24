@@ -95,16 +95,19 @@ enum ReservationSource {
 
 enum PaymentStatus {
   PENDING
-  PARTIAL
-  PAID
-  REFUNDED
-  CANCELLED
-  FAILED
-  DISPUTED
+  PROCESSING
   AWAITING_PAYMENT_METHOD
   AWAITING_NEXT_ACTION
-  PROCESSING
   SUCCEEDED
+  PAID
+  PARTIAL
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+  CHARGEBACK
+  EXPIRED
 }
 
 enum PaymentMethod {
@@ -1481,32 +1484,81 @@ model Payment {
   id            String @id @default(uuid())
   reservationId String
 
+  // Basic payment info
   amount   Decimal       @db.Decimal(10, 2)
   currency String        @default("PHP")
   method   PaymentMethod
   status   PaymentStatus @default(PENDING)
 
+  // PayMongo specific fields (existing)
   provider          String   @default("paymongo")
-  providerPaymentId String   @unique // The Payment Intent ID from PayMongo (e.g., pi_xxxx)
-  clientKey         String? // The client_key needed for frontend confirmation
-  paymentMethod     String? // e.g., "card", "gcash"
-  netAmount         Decimal? // Amount after fees
-  fee               Decimal? // PayMongo's fee
+  providerPaymentId String   @unique // Payment Intent ID (pi_xxxx)
+  clientKey         String? // Client key for frontend
+  paymentMethod     String? // "card", "gcash", "grabpay", etc.
+  netAmount         Decimal? @db.Decimal(10, 2) // After fees
+  fee               Decimal? @db.Decimal(10, 2) // PayMongo's fee
 
+  // Enhanced PayMongo fields for better tracking
+  checkoutSessionId String? // For checkout session tracking
+  sourceId          String? // PayMongo source ID if applicable
+  webhookEventId    String? // Track which webhook event processed this
+
+  // Card/Payment method details (from webhook data)
+  cardBrand   String? // "visa", "mastercard", etc.
+  cardLast4   String? // Last 4 digits
+  cardCountry String? // Issuing country
+
+  // E-wallet specific info
+  ewalletType String? // "gcash", "grabpay", "paymaya"
+  redirectUrl String? // For redirect-based payments
+
+  // Payment flow tracking
+  paymentFlow String? // "redirect", "direct", "checkout"
+  returnUrl   String? // Where customer returns after payment
+
+  // Failure details
+  failureCode    String? // PayMongo failure code
+  failureMessage String? // Human readable failure reason
+
+  // Refund tracking
+  refundedAmount Decimal?  @default(0) @db.Decimal(10, 2)
+  refundReason   String?
+  refundedAt     DateTime?
+  refundId       String? // PayMongo refund ID
+
+  // Dispute/chargeback tracking
+  disputeId     String? // If payment is disputed
+  disputeStatus String? // "inquiry", "chargeback", etc.
+  disputedAt    DateTime?
+
+  // Timestamps
   transactionDate DateTime  @default(now())
-  processedAt     DateTime?
+  processedAt     DateTime? // When payment was actually processed
+  authorizedAt    DateTime? // When payment was authorized
+  capturedAt      DateTime? // When payment was captured (for auth+capture flow)
 
-  rawPayload Json? // Store the full webhook payload for auditing
+  // Audit trail
+  rawPayload       Json? // Store the full webhook payload
+  webhookSignature String? // For verification purposes
+  ipAddress        String? // Customer's IP
+  userAgent        String? // Customer's browser
 
-  notes String?
+  // Internal notes
+  notes         String?
+  internalNotes String? // Staff notes, not visible to customer
 
-  reservation Reservation @relation(fields: [reservationId], references: [id])
+  // Relationships
+  reservation    Reservation      @relation(fields: [reservationId], references: [id])
+  paymentAttempt PaymentAttempt[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([reservationId])
   @@index([status, transactionDate])
+  @@index([providerPaymentId])
+  @@index([checkoutSessionId])
+  @@index([webhookEventId])
   @@map("payments")
 }
 
@@ -2569,4 +2621,75 @@ enum FeedbackPriority {
   MEDIUM
   HIGH
   CRITICAL
+}
+
+// Model for tracking payment attempts/retries
+model PaymentAttempt {
+  id        String @id @default(uuid())
+  paymentId String
+
+  // Attempt details
+  attemptNumber Int
+  status        String // "pending", "succeeded", "failed"
+  failureReason String?
+  failureCode   String?
+
+  // PayMongo specific
+  intentId String? // Payment intent ID for this attempt
+  sourceId String? // Source ID if applicable
+
+  // Timing
+  attemptedAt DateTime  @default(now())
+  completedAt DateTime?
+
+  // Metadata
+  metadata Json? // Any additional data for this attempt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId, attemptNumber])
+  @@index([status, attemptedAt])
+  @@map("payment_attempts")
+}
+
+// Additional model for webhook event logging
+model WebhookEvent {
+  id String @id @default(uuid())
+
+  // Event identification
+  eventId      String @unique // PayMongo's event ID
+  eventType    String // "payment.paid", "payment.failed", etc.
+  resourceType String // "payment", "source", etc.
+  resourceId   String // The PayMongo resource ID
+
+  // Processing status
+  status      String    @default("received") // "received", "processed", "failed", "ignored"
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+
+  // Error handling
+  error       String? // If processing failed
+  retryCount  Int       @default(0)
+  nextRetryAt DateTime?
+
+  // Webhook metadata
+  signature String? // Webhook signature for verification
+  payload   Json // Full webhook payload
+  headers   Json? // Webhook headers
+
+  // Request context
+  ipAddress String? // PayMongo's IP
+  userAgent String? // PayMongo's user agent
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventType, createdAt])
+  @@index([resourceId, eventType])
+  @@index([status, processedAt])
+  @@index([processed, nextRetryAt]) // For retry mechanism
+  @@map("webhook_events")
 }

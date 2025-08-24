@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,17 +10,19 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import { Calendar as CalendarIcon, Users, CreditCard, Shield, Star, Gift, Clock, CheckCircle } from "lucide-react"
-import { format, differenceInDays, addDays } from "date-fns"
+import { Calendar as CalendarIcon, Users, CreditCard, Shield, Star, Gift, Clock, CheckCircle, MessageSquare } from "lucide-react"
+import { format, differenceInDays, addDays, isBefore, startOfDay } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
 import { z } from "zod"
 import axios, { AxiosError } from "axios"
-// Fixed imports - using the actual model types
+// Updated imports to match your Prisma schema
 import { BusinessUnit, RoomType_Model, RoomRate } from "@prisma/client"
 
 interface CreateReservationResponse {
   reservationId: string;
+  confirmationNumber: string;
   checkoutUrl: string;
   paymentSessionId: string;
 }
@@ -34,16 +35,19 @@ interface CreateReservationError {
 // Type for session storage data
 interface PendingReservation {
   reservationId: string;
+  confirmationNumber: string;
   paymentSessionId: string;
   timestamp: number;
 }
 
-// Zod schemas for validation - Fixed the syntax
+// Updated Zod schemas with new fields
 const GuestDetailsSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50, "First name too long"),
   lastName: z.string().min(1, "Last name is required").max(50, "Last name too long"),
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().optional(),
+  specialRequests: z.string().optional(),
+  guestNotes: z.string().optional(),
 })
 
 const BookingDataSchema = z.object({
@@ -73,19 +77,30 @@ const ReservationRequestSchema = GuestDetailsSchema.merge(BookingDataSchema).ext
   serviceFee: z.number().min(0, "Service fee cannot be negative"),
 })
 
+// Updated interface to match your schema structure
 interface RoomBookingWidgetProps {
-  property: BusinessUnit;
-  // Fixed type - using RoomType_Model instead of RoomType enum
+  property: BusinessUnit & {
+    // Include any additional relations you need
+    roomTypes?: RoomType_Model[];
+  };
   roomType: RoomType_Model & {
     rates: RoomRate[];
     _count: { rooms: number };
+    // Include amenities if needed
+    amenities?: Array<{
+      amenity: {
+        id: string;
+        name: string;
+        description?: string;
+        icon?: string;
+      }
+    }>;
   };
 }
 
-type BookingStep = 'dates' | 'guests' | 'summary' | 'booking'
+type BookingStep = 'dates' | 'guests' | 'details' | 'summary' | 'booking'
 
 export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps) {
-  const router = useRouter();
   const [checkIn, setCheckIn] = useState<Date>()
   const [checkOut, setCheckOut] = useState<Date>()
   const [adults, setAdults] = useState("2")
@@ -99,12 +114,20 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
+  const [guestNotes, setGuestNotes] = useState("");
 
+  // Calculate pricing using the property's tax rates or defaults
   const currentRate = roomType.rates[0] || { baseRate: roomType.baseRate };
   const nights = checkIn && checkOut ? differenceInDays(checkOut, checkIn) : 0;
   const subtotal = nights * Number(currentRate.baseRate);
-  const taxes = subtotal * 0.12; // 12% tax
-  const serviceFee = subtotal * 0.05; // 5% service fee
+  
+  // Use property-specific tax rates if available, otherwise use defaults
+  const taxRate = property.taxRate || 0.12; // 12% default
+  const serviceFeeRate = property.serviceFeeRate || 0.05; // 5% default
+  
+  const taxes = subtotal * taxRate;
+  const serviceFee = subtotal * serviceFeeRate;
   const total = subtotal + taxes + serviceFee;
 
   const handleDateSelect = (date: Date | undefined, type: 'checkIn' | 'checkOut') => {
@@ -120,6 +143,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
     }
   };
 
+  // Enhanced validation with property-specific rules
   const validateStep = (currentStep: BookingStep): boolean => {
     setValidationErrors({})
     
@@ -133,6 +157,21 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
             description: "Please select both check-in and check-out dates"
           })
           return false
+        }
+        
+        // Check minimum advance booking if property has this rule
+        if (property.maxAdvanceBooking && checkIn) {
+          const today = startOfDay(new Date());
+          const maxAdvanceDate = addDays(today, property.maxAdvanceBooking);
+          if (checkIn > maxAdvanceDate) {
+            setValidationErrors({ 
+              checkInDate: `Cannot book more than ${property.maxAdvanceBooking} days in advance` 
+            })
+            toast.error("Booking Too Far Ahead", {
+              description: `Maximum ${property.maxAdvanceBooking} days advance booking allowed`
+            })
+            return false
+          }
         }
         
         try {
@@ -203,6 +242,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
         return true
       }
       
+      case 'details':
       case 'summary':
         return true
         
@@ -212,7 +252,9 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
             firstName,
             lastName,
             email,
-            phone
+            phone,
+            specialRequests,
+            guestNotes
           })
           return true
         } catch (error) {
@@ -246,11 +288,14 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
         })
       }
       else if (step === 'guests') {
-        setStep('summary');
+        setStep('details');
         const guestCount = parseInt(adults) + parseInt(children)
         toast.success("Guests Confirmed", {
           description: `${guestCount} guest${guestCount > 1 ? 's' : ''} selected`
         })
+      }
+      else if (step === 'details') {
+        setStep('summary');
       }
       else if (step === 'summary') {
         setStep('booking');
@@ -261,119 +306,124 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
   const prevStep = () => {
     setValidationErrors({})
     if (step === 'guests') setStep('dates');
-    else if (step === 'summary') setStep('guests');
+    else if (step === 'details') setStep('guests');
+    else if (step === 'summary') setStep('details');
     else if (step === 'booking') setStep('summary');
   };
 
   const handleBooking = async () => {
-  if (!validateStep('booking') || !checkIn || !checkOut) {
-    return;
-  }
-
-  setIsLoading(true);
-  
-  try {
-    // Final validation with complete reservation data
-    const reservationData = {
-      firstName,
-      lastName,
-      email,
-      phone,
-      checkInDate: checkIn,
-      checkOutDate: checkOut,
-      adults: parseInt(adults),
-      children: parseInt(children),
-      totalAmount: total,
-      nights,
-      subtotal,
-      taxes,
-      serviceFee,
-      businessUnitId: property.id,
-      roomTypeId: roomType.id,
-    };
-
-    // Validate the complete reservation data
-    ReservationRequestSchema.parse(reservationData);
-
-    // Show processing toast
-    toast.loading("Creating your reservation...", {
-      id: "booking-process"
-    });
-
-    const response = await axios.post<CreateReservationResponse>('/api/reservations/create-with-payment', {
-      ...reservationData,
-      checkInDate: checkIn.toISOString(),
-      checkOutDate: checkOut.toISOString(),
-    });
-
-    const { reservationId, checkoutUrl, paymentSessionId } = response.data;
-
-    // Dismiss loading toast and show success
-    toast.dismiss("booking-process");
-    toast.success("Reservation Created!", {
-      description: "Redirecting to secure payment page...",
-      duration: 3000
-    });
-    
-    // Store reservation info in sessionStorage for tracking
-    const pendingReservation: PendingReservation = {
-      reservationId,
-      paymentSessionId,
-      timestamp: Date.now()
-    };
-    
-    sessionStorage.setItem('pendingReservation', JSON.stringify(pendingReservation));
-    
-    // Redirect to PayMongo checkout
-    setTimeout(() => {
-      window.location.href = checkoutUrl;
-    }, 1000);
-
-  } catch (error) {
-    console.error("Booking failed:", error);
-    
-    // Dismiss loading toast
-    toast.dismiss("booking-process");
-    
-    if (error instanceof z.ZodError) {
-      const fieldErrors: Record<string, string> = {};
-      error.issues.forEach(issue => {
-        if (issue.path[0]) {
-          fieldErrors[issue.path[0].toString()] = issue.message;
-        }
-      });
-      setValidationErrors(fieldErrors);
-      toast.error("Validation Error", {
-        description: "Please check your booking details and try again.",
-      });
-    } else if (error instanceof AxiosError) {
-      const errorData = error.response?.data as CreateReservationError | undefined;
-      const errorMessage = errorData?.error || error.message || "Failed to create reservation";
-      
-      toast.error("Booking Failed", {
-        description: errorMessage,
-        action: {
-          label: "Retry",
-          onClick: () => handleBooking()
-        }
-      });
-    } else {
-      toast.error("Booking Failed", {
-        description: "An unexpected error occurred. Please try again.",
-        action: {
-          label: "Retry",
-          onClick: () => handleBooking()
-        }
-      });
+    if (!validateStep('booking') || !checkIn || !checkOut) {
+      return;
     }
+
+    setIsLoading(true);
     
-    setIsLoading(false);
-  }
-};
+    try {
+      // Final validation with complete reservation data
+      const reservationData = {
+        firstName,
+        lastName,
+        email,
+        phone,
+        specialRequests,
+        guestNotes,
+        checkInDate: checkIn,
+        checkOutDate: checkOut,
+        adults: parseInt(adults),
+        children: parseInt(children),
+        totalAmount: total,
+        nights,
+        subtotal,
+        taxes,
+        serviceFee,
+        businessUnitId: property.id,
+        roomTypeId: roomType.id,
+      };
+
+      // Validate the complete reservation data
+      ReservationRequestSchema.parse(reservationData);
+
+      // Show processing toast
+      toast.loading("Creating your reservation...", {
+        id: "booking-process"
+      });
+
+      const response = await axios.post<CreateReservationResponse>('/api/reservations/create-with-payment', {
+        ...reservationData,
+        checkInDate: checkIn.toISOString(),
+        checkOutDate: checkOut.toISOString(),
+      });
+
+      const { reservationId, confirmationNumber, checkoutUrl, paymentSessionId } = response.data;
+
+      // Dismiss loading toast and show success
+      toast.dismiss("booking-process");
+      toast.success("Reservation Created!", {
+        description: `Confirmation: ${confirmationNumber}. Redirecting to payment...`,
+        duration: 3000
+      });
+      
+      // Store reservation info in sessionStorage for tracking
+      const pendingReservation: PendingReservation = {
+        reservationId,
+        confirmationNumber,
+        paymentSessionId,
+        timestamp: Date.now()
+      };
+      
+      sessionStorage.setItem('pendingReservation', JSON.stringify(pendingReservation));
+      
+      // Redirect to PayMongo checkout
+      setTimeout(() => {
+        window.location.href = checkoutUrl;
+      }, 1000);
+
+    } catch (error) {
+      console.error("Booking failed:", error);
+      
+      // Dismiss loading toast
+      toast.dismiss("booking-process");
+      
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        error.issues.forEach(issue => {
+          if (issue.path[0]) {
+            fieldErrors[issue.path[0].toString()] = issue.message;
+          }
+        });
+        setValidationErrors(fieldErrors);
+        toast.error("Validation Error", {
+          description: "Please check your booking details and try again.",
+        });
+      } else if (error instanceof AxiosError) {
+        const errorData = error.response?.data as CreateReservationError | undefined;
+        const errorMessage = errorData?.error || error.message || "Failed to create reservation";
+        
+        toast.error("Booking Failed", {
+          description: errorMessage,
+          action: {
+            label: "Retry",
+            onClick: () => handleBooking()
+          }
+        });
+      } else {
+        toast.error("Booking Failed", {
+          description: "An unexpected error occurred. Please try again.",
+          action: {
+            label: "Retry",
+            onClick: () => handleBooking()
+          }
+        });
+      }
+      
+      setIsLoading(false);
+    }
+  };
 
   const stepTitles = {
     dates: "Select Dates",
-    guests: "Guest Details", 
+    guests: "Guest Count", 
+    details: "Special Requests",
     summary: "Booking Summary",
     booking: "Complete Booking"
   };
@@ -395,6 +445,9 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
             ₱{Number(currentRate.baseRate).toLocaleString()}
           </div>
           <div className="text-sm text-slate-600">per night</div>
+          <div className="text-xs text-slate-500 mt-1">
+            {property.primaryCurrency || 'PHP'} • Taxes included
+          </div>
         </div>
 
         <div className="flex items-center justify-between mt-6">
@@ -414,7 +467,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                 )}
               </div>
               {index < Object.keys(stepTitles).length - 1 && (
-                <div className={`w-12 h-0.5 mx-2 transition-colors duration-300 ${
+                <div className={`w-8 h-0.5 mx-1 transition-colors duration-300 ${
                   Object.keys(stepTitles).indexOf(step) > index ? "bg-green-500" : "bg-slate-200"
                 }`} />
               )}
@@ -459,7 +512,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                         mode="single"
                         selected={checkIn}
                         onSelect={(date) => handleDateSelect(date, 'checkIn')}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date) => isBefore(date, startOfDay(new Date()))}
                       />
                     </PopoverContent>
                   </Popover>
@@ -487,7 +540,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                         mode="single"
                         selected={checkOut}
                         onSelect={(date) => handleDateSelect(date, 'checkOut')}
-                        disabled={(date) => date < new Date() || (checkIn ? date <= checkIn : false)}
+                        disabled={(date) => isBefore(date, startOfDay(new Date())) || (checkIn ? date <= checkIn : false)}
                       />
                     </PopoverContent>
                   </Popover>
@@ -508,6 +561,9 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                   <div className="flex items-center gap-2 text-blue-800">
                     <Clock className="h-4 w-4" />
                     <span className="font-medium">{nights} night{nights > 1 ? 's' : ''} stay</span>
+                  </div>
+                  <div className="text-sm text-blue-600 mt-1">
+                    Check-in: {property.checkInTime} • Check-out: {property.checkOutTime}
                   </div>
                 </div>
               )}
@@ -586,7 +642,64 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
             </motion.div>
           )}
 
-          {/* Step 3: Booking Summary */}
+          {/* Step 3: Special Requests & Details */}
+          {step === 'details' && (
+            <motion.div
+              key="details"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Special Requests (Optional)
+                </Label>
+                <Textarea
+                  placeholder="e.g., High floor, ocean view, late check-in, dietary requirements..."
+                  className="min-h-[80px] resize-none"
+                  value={specialRequests}
+                  onChange={(e) => setSpecialRequests(e.target.value)}
+                  maxLength={500}
+                />
+                <div className="text-xs text-slate-500 mt-1">
+                  {specialRequests.length}/500 characters
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700 mb-2 block">
+                  Additional Notes (Optional)
+                </Label>
+                <Textarea
+                  placeholder="Any additional information you'd like to share..."
+                  className="min-h-[60px] resize-none"
+                  value={guestNotes}
+                  onChange={(e) => setGuestNotes(e.target.value)}
+                  maxLength={300}
+                />
+                <div className="text-xs text-slate-500 mt-1">
+                  {guestNotes.length}/300 characters
+                </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-blue-900 text-sm mb-1">We&apos;ll do our best</div>
+                    <div className="text-xs text-blue-700 leading-relaxed">
+                      Special requests are subject to availability and may incur additional charges. 
+                      We&apos;ll contact you if we need clarification.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 4: Booking Summary */}
           {step === 'summary' && (
             <motion.div
               key="summary"
@@ -597,6 +710,14 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
               className="space-y-6"
             >
               <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Property</span>
+                  <span className="font-medium text-slate-900">{property.displayName}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Room Type</span>
+                  <span className="font-medium text-slate-900">{roomType.displayName}</span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-600">Check-in</span>
                   <span className="font-medium text-slate-900">
@@ -630,11 +751,11 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                   <span className="font-medium text-slate-900">₱{subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Taxes & fees</span>
+                  <span className="text-slate-600">Taxes ({(taxRate * 100).toFixed(0)}%)</span>
                   <span className="font-medium text-slate-900">₱{taxes.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Service fee</span>
+                  <span className="text-slate-600">Service fee ({(serviceFeeRate * 100).toFixed(0)}%)</span>
                   <span className="font-medium text-slate-900">₱{serviceFee.toLocaleString()}</span>
                 </div>
                 
@@ -646,19 +767,43 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                 </div>
               </div>
 
+              {(specialRequests || guestNotes) && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    {specialRequests && (
+                      <div>
+                        <div className="text-sm font-medium text-slate-700">Special Requests:</div>
+                        <div className="text-sm text-slate-600 bg-slate-50 p-2 rounded">
+                          {specialRequests}
+                        </div>
+                      </div>
+                    )}
+                    {guestNotes && (
+                      <div>
+                        <div className="text-sm font-medium text-slate-700">Notes:</div>
+                        <div className="text-sm text-slate-600 bg-slate-50 p-2 rounded">
+                          {guestNotes}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
                 <div className="flex items-center gap-2 text-green-800 mb-2">
                   <Gift className="h-4 w-4" />
-                  <span className="font-medium text-sm">Special Offer Applied</span>
+                  <span className="font-medium text-sm">Included Benefits</span>
                 </div>
                 <div className="text-xs text-green-700">
-                  Free breakfast included • Late checkout available
+                  Free Wi-Fi • {property.cancellationHours}h free cancellation • Instant confirmation
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* Step 4: Booking Form */}
+          {/* Step 5: Booking Form */}
           {step === 'booking' && (
             <motion.div
               key="booking"
@@ -744,6 +889,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
                     <div className="font-medium text-blue-900 text-sm mb-1">Secure Booking</div>
                     <div className="text-xs text-blue-700 leading-relaxed">
                       You will be redirected to our secure payment partner, PayMongo, to complete your booking.
+                      Your confirmation will be sent immediately after successful payment.
                     </div>
                   </div>
                 </div>
@@ -785,7 +931,7 @@ export function RoomBookingWidget({ property, roomType }: RoomBookingWidgetProps
               ) : (
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-4 w-4" />
-                  Proceed to Payment
+                  Complete Booking - ₱{total.toLocaleString()}
                 </div>
               )}
             </Button>

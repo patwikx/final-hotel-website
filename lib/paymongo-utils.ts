@@ -1,67 +1,201 @@
-import { CheckoutSessionWebhookData, PaymentIntentWebhookData, WebhookEvent } from "@/types/paymongo-types";
+// lib/payment-utils.ts
+import { prisma } from '@/lib/prisma';
 
-// 5. Type-safe utility functions: lib/paymongo-utils.ts
-export function validateWebhookEvent(event: unknown): event is WebhookEvent {
-  if (typeof event !== 'object' || event === null) {
-    return false;
+// Helper function to create payment record when creating PayMongo payment intent
+export async function createPaymentRecord({
+  reservationId,
+  paymongoPaymentIntentId,
+  clientKey,
+  amount,
+  currency = 'PHP',
+  paymentFlow = 'direct',
+  checkoutSessionId
+}: {
+  reservationId: string;
+  paymongoPaymentIntentId: string;
+  clientKey: string;
+  amount: number;
+  currency?: string;
+  paymentFlow?: 'direct' | 'checkout';
+  checkoutSessionId?: string;
+}) {
+  return await prisma.payment.create({
+    data: {
+      reservationId,
+      amount,
+      currency,
+      method: 'CARD', // Will be updated by webhook
+      status: 'PENDING',
+      provider: 'paymongo',
+      providerPaymentId: paymongoPaymentIntentId,
+      clientKey,
+      paymentFlow,
+      checkoutSessionId,
+      transactionDate: new Date()
+    }
+  });
+}
+
+// Helper function to get payment status for a reservation
+export async function getPaymentStatus(reservationId: string) {
+  const payments = await prisma.payment.findMany({
+    where: { reservationId },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (payments.length === 0) {
+    return { status: 'NO_PAYMENT', latestPayment: null };
   }
 
-  const e = event as Record<string, unknown>;
-  
-  return (
-    typeof e.data === 'object' &&
-    e.data !== null &&
-    typeof (e.data as Record<string, unknown>).id === 'string' &&
-    typeof (e.data as Record<string, unknown>).type === 'string' &&
-    typeof (e.data as Record<string, unknown>).attributes === 'object'
-  );
+  const latestPayment = payments[0];
+  const totalPaid = payments
+    .filter(p => p.status === 'SUCCEEDED' || p.status === 'PAID')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
+
+  return {
+    status: latestPayment.status,
+    totalPaid,
+    latestPayment,
+    allPayments: payments
+  };
 }
 
-export function isCheckoutSessionEvent(eventType: string): boolean {
-  return eventType === 'checkout_session.payment.paid' || eventType === 'checkout_session.payment.failed';
-}
+// Helper function to handle payment retries
+export async function retryFailedPayment(paymentId: string) {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { reservation: true }
+  });
 
-export function isPaymentIntentEvent(eventType: string): boolean {
-  return eventType === 'payment_intent.payment.paid' || eventType === 'payment_intent.payment.failed';
-}
-
-export function formatPayMongoAmount(amount: number): number {
-  // Convert PHP amount to centavos (multiply by 100)
-  return Math.round(amount * 100);
-}
-
-export function formatDisplayAmount(centavos: number): number {
-  // Convert centavos back to PHP amount (divide by 100)
-  return centavos / 100;
-}
-
-// Type guard for checkout session webhook data
-export function isCheckoutSessionWebhookData(data: unknown): data is CheckoutSessionWebhookData {
-  if (typeof data !== 'object' || data === null) {
-    return false;
+  if (!payment || payment.status !== 'FAILED') {
+    throw new Error('Payment not found or not in failed state');
   }
 
-  const d = data as Record<string, unknown>;
-  
-  return (
-    typeof d.checkout_url === 'string' &&
-    typeof d.status === 'string' &&
-    Array.isArray(d.line_items) &&
-    Array.isArray(d.payment_method_types)
-  );
+  // Create a new payment attempt
+  const attemptNumber = await prisma.paymentAttempt.count({
+    where: { paymentId }
+  }) + 1;
+
+  await prisma.paymentAttempt.create({
+    data: {
+      paymentId,
+      attemptNumber,
+      status: 'pending',
+      attemptedAt: new Date()
+    }
+  });
+
+  // Update payment status to pending
+  return await prisma.payment.update({
+    where: { id: paymentId },
+    data: {
+      status: 'PENDING',
+      failureCode: null,
+      failureMessage: null
+    }
+  });
 }
 
-// Type guard for payment intent webhook data  
-export function isPaymentIntentWebhookData(data: unknown): data is PaymentIntentWebhookData {
-  if (typeof data !== 'object' || data === null) {
-    return false;
+// Helper function to process refunds
+export async function processRefund({
+  paymentId,
+  amount,
+  reason,
+  paymongoRefundId
+}: {
+  paymentId: string;
+  amount: number;
+  reason?: string;
+  paymongoRefundId: string;
+}) {
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId }
+  });
+
+  if (!payment) {
+    throw new Error('Payment not found');
   }
 
-  const d = data as Record<string, unknown>;
-  
-  return (
-    typeof d.amount === 'number' &&
-    typeof d.currency === 'string' &&
-    typeof d.status === 'string'
-  );
+  const newRefundedAmount = Number(payment.refundedAmount || 0) + amount;
+  const isFullRefund = newRefundedAmount >= Number(payment.amount);
+
+  return await prisma.payment.update({
+    where: { id: paymentId },
+    data: {
+      status: isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+      refundedAmount: newRefundedAmount,
+      refundReason: reason,
+      refundedAt: new Date(),
+      refundId: paymongoRefundId
+    }
+  });
+}
+
+// Helper function to get webhook events for debugging
+export async function getWebhookEvents({
+  resourceId,
+  eventType,
+  limit = 50
+}: {
+  resourceId?: string;
+  eventType?: string;
+  limit?: number;
+}) {
+  return await prisma.webhookEvent.findMany({
+    where: {
+      ...(resourceId && { resourceId }),
+      ...(eventType && { eventType })
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit
+  });
+}
+
+// Helper function to retry failed webhook events
+export async function retryFailedWebhooks() {
+  const failedEvents = await prisma.webhookEvent.findMany({
+    where: {
+      status: 'failed',
+      retryCount: { lt: 3 }, // Max 3 retries
+      nextRetryAt: { lte: new Date() }
+    },
+    take: 10 // Process 10 at a time
+  });
+
+  console.log(`Found ${failedEvents.length} failed webhook events to retry`);
+
+  for (const event of failedEvents) {
+    try {
+      // You would re-process the webhook event here
+      // This is a simplified example
+      console.log(`Retrying webhook event ${event.id}`);
+      
+      await prisma.webhookEvent.update({
+        where: { id: event.id },
+        data: {
+          retryCount: { increment: 1 },
+          status: 'processing',
+          nextRetryAt: new Date(Date.now() + (event.retryCount + 1) * 5 * 60 * 1000) // Exponential backoff
+        }
+      });
+    } catch (error) {
+      console.error(`Failed to retry webhook event ${event.id}:`, error);
+    }
+  }
+}
+
+// Helper function to clean up old webhook events
+export async function cleanupOldWebhookEvents(daysOld = 30) {
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+  const result = await prisma.webhookEvent.deleteMany({
+    where: {
+      createdAt: { lt: cutoffDate },
+      processed: true
+    }
+  });
+
+  console.log(`Cleaned up ${result.count} old webhook events`);
+  return result.count;
 }

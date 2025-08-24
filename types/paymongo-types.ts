@@ -242,11 +242,10 @@ export type WebhookEventType =
   | 'refund.created'
   | 'refund.updated';
 
-export interface CheckoutSessionWebhookData extends CheckoutSessionAttributes {}
-
-export interface PaymentIntentWebhookData extends PaymentIntentAttributes {}
-
-export interface PaymentWebhookData extends PaymentAttributes {}
+// Corrected empty interfaces to type aliases to resolve ESLint errors
+export type CheckoutSessionWebhookData = CheckoutSessionAttributes;
+export type PaymentIntentWebhookData = PaymentIntentAttributes;
+export type PaymentWebhookData = PaymentAttributes;
 
 // Request/Input types for creating resources
 export interface CreateCheckoutSessionRequest {
