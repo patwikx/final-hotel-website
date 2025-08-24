@@ -25,7 +25,8 @@ import {
   Trash2, 
   PenTool,
   User,
-  TrendingUp
+  TrendingUp,
+  Filter
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
@@ -40,90 +41,105 @@ export default async function BlogManagement() {
     orderBy: { updatedAt: 'desc' }
   })
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'PUBLISHED': return 'bg-green-100 text-green-800'
-      case 'DRAFT': return 'bg-yellow-100 text-yellow-800'
-      case 'SCHEDULED': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'PUBLISHED': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'DRAFT': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      case 'SCHEDULED': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
     }
   }
 
+  const formatStatusText = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Blog Posts</h1>
-          <p className="text-slate-600 mt-1">Create and manage your blog content</p>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Blog Posts</h1>
+          </div>
+          <p className="max-w-2xl text-sm text-muted-foreground leading-relaxed">
+            Create and manage your blog content to engage with your audience
+          </p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
-          <Link href="/admin/cms/blog/new">
-            <Plus className="h-4 w-4 mr-2" />
-            New Post
-          </Link>
-        </Button>
+        
+        <div className="flex items-center gap-2">
+          <Button size="sm" asChild>
+            <Link href="/admin/cms/blog/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Post
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <PenTool className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Posts</p>
+                <p className="text-2xl font-bold tabular-nums">{blogPosts.length}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{blogPosts.length}</p>
-                <p className="text-sm text-slate-600">Total Posts</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <PenTool className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Eye className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Published</p>
+                <p className="text-2xl font-bold tabular-nums">
                   {blogPosts.filter(p => p.status === 'PUBLISHED').length}
                 </p>
-                <p className="text-sm text-slate-600">Published</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+                <Eye className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Edit className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Drafts</p>
+                <p className="text-2xl font-bold tabular-nums">
                   {blogPosts.filter(p => p.status === 'DRAFT').length}
                 </p>
-                <p className="text-sm text-slate-600">Drafts</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <Edit className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Views</p>
+                <p className="text-2xl font-bold tabular-nums">
                   {blogPosts.reduce((sum, post) => sum + (post.viewCount || 0), 0).toLocaleString()}
                 </p>
-                <p className="text-sm text-slate-600">Total Views</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <TrendingUp className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -131,93 +147,144 @@ export default async function BlogManagement() {
       </div>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
+      <Card className="border-border">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Blog Posts</CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="space-y-1.5">
+              <CardTitle className="text-xl">All Blog Posts</CardTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Complete overview of your blog content and publishing status
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search posts..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-80"
                 />
               </div>
+              <Button variant="outline" size="sm">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
             </div>
           </div>
         </CardHeader>
         
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">Title</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Author</TableHead>
-                <TableHead className="font-semibold text-slate-700">Published</TableHead>
-                <TableHead className="font-semibold text-slate-700">Views</TableHead>
-                <TableHead className="w-12"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {blogPosts.map((post) => (
-                <TableRow key={post.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold text-slate-900">{post.title}</p>
-                      <p className="text-sm text-slate-500">/{post.slug}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`${getStatusColor(post.status)} border-0`}>
-                      {post.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center">
-                        <User className="h-3 w-3 text-slate-600" />
-                      </div>
-                      <span className="text-sm text-slate-700">
-                        {post.author.firstName} {post.author.lastName}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '-'}
-                  </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {(post.viewCount || 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/cms/blog/${post.id}`}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Preview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {blogPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-6">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted">
+                <PenTool className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div className="mt-6 text-center">
+                <h3 className="text-lg font-semibold text-foreground">No blog posts yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Start creating engaging content for your audience by adding your first blog post.
+                </p>
+              </div>
+              <Button className="mt-4" asChild>
+                <Link href="/admin/cms/blog/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create First Post
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-medium">Title</TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
+                  <TableHead className="font-medium">Author</TableHead>
+                  <TableHead className="font-medium">Published</TableHead>
+                  <TableHead className="font-medium">Views</TableHead>
+                  <TableHead className="w-12"></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {blogPosts.map((post) => {
+                  const statusConfig = getStatusVariant(post.status)
+                  
+                  return (
+                    <TableRow key={post.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                            <PenTool className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">{post.title}</p>
+                            <p className="text-xs text-muted-foreground font-mono">/{post.slug}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={statusConfig.variant}
+                          className={`font-medium ${statusConfig.className}`}
+                        >
+                          {formatStatusText(post.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">
+                              {post.author.firstName} {post.author.lastName}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">
+                            {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : '-'}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium tabular-nums">
+                            {(post.viewCount || 0).toLocaleString()}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/cms/blog/${post.id}`}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

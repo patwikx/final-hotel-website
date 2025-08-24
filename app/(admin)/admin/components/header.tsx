@@ -72,7 +72,7 @@ export function AdminHeader() {
   ]
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+    <header className="sticky top-0 z-35 bg-white border-b border-slate-200 shadow-sm">
       <div className="flex items-center justify-between h-16 px-6">
         {/* Left Section */}
         <div className="flex items-center gap-4">

@@ -19,7 +19,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { 
   Plus, 
@@ -30,7 +31,9 @@ import {
   Trash2,
   Link as LinkIcon,
   ExternalLink,
-  GripVertical
+  GripVertical,
+  Save,
+  Eye
 } from "lucide-react"
 import Link from "next/link"
 import { NavigationMenu, NavigationItem } from "@prisma/client"
@@ -60,6 +63,40 @@ export default function ManageNavigationPage({ params }: ManageNavigationPagePro
         // const menuData = await getNavigationMenuById(id)
         // setMenu(menuData)
         // setItems(menuData.items)
+        
+        // Mock data for demo
+        setMenu({
+          id: "1",
+          name: "Main Navigation",
+          slug: "main-nav",
+          location: "header",
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } as NavigationMenu)
+        
+        setItems([
+          {
+            id: "1",
+            label: "Home",
+            url: "/",
+            target: "_self",
+            sortOrder: 1,
+            menuId: "1",
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: "2",
+            label: "About",
+            url: "/about",
+            target: "_self",
+            sortOrder: 2,
+            menuId: "1",
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ] as NavigationItem[])
       } catch (error) {
         console.error('Failed to load menu:', error)
         router.push('/admin/cms/navigation')
@@ -98,115 +135,172 @@ export default function ManageNavigationPage({ params }: ManageNavigationPagePro
   if (!menu) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/cms/navigation">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Navigation
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Manage Menu Items</h1>
-            <p className="text-slate-600 mt-1">Configure navigation structure for {menu.name}</p>
+      <div className="flex flex-col space-y-4 md:flex-row md:items-start md:justify-between md:space-y-0">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+              <Link href="/admin/cms/navigation">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Navigation
+              </Link>
+            </Button>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-sm font-medium text-foreground">Manage Items</span>
           </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Manage Menu Items</h1>
+            <p className="text-sm text-muted-foreground">
+              Configure navigation structure for <span className="font-medium">{menu.name}</span>
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm">
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </Button>
+          <Button size="sm">
+            <Save className="mr-2 h-4 w-4" />
+            Save Changes
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Menu Info */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <Navigation className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium leading-none">{menu.name}</p>
+                <p className="text-xs text-muted-foreground">/{menu.slug}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                {menu.location?.charAt(0).toUpperCase() + menu.location?.slice(1) || 'Header'}
+              </Badge>
+              <Badge variant={menu.isActive ? "default" : "secondary"}>
+                {menu.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Menu Items List */}
-        <div className="lg:col-span-2">
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2">
-                <Navigation className="h-5 w-5 text-amber-600" />
-                Menu Items
-              </CardTitle>
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <Navigation className="h-4 w-4" />
+                    Menu Items
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {items.length} item{items.length !== 1 ? 's' : ''} in this menu
+                  </p>
+                </div>
+                <Badge variant="outline">{items.length} items</Badge>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {items.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-slate-100">
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead className="font-semibold text-slate-700">Label</TableHead>
-                      <TableHead className="font-semibold text-slate-700">URL</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Target</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Order</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item) => (
-                      <TableRow key={item.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
-                        <TableCell>
-                          <GripVertical className="h-4 w-4 text-slate-400 cursor-move" />
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
-                              <LinkIcon className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <span className="font-medium text-slate-900">{item.label}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-slate-600 font-mono">{item.url}</span>
-                            {item.target === "_blank" && (
-                              <ExternalLink className="h-3 w-3 text-slate-400" />
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {item.target === "_blank" ? "New Tab" : "Same Tab"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-slate-700">{item.sortOrder}</span>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => handleDeleteItem(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                <div className="relative w-full overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[40px]">Order</TableHead>
+                        <TableHead>Label</TableHead>
+                        <TableHead>URL</TableHead>
+                        <TableHead className="text-center">Target</TableHead>
+                        <TableHead className="w-[70px]">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <GripVertical className="h-4 w-4 cursor-move text-muted-foreground" />
+                              <span className="text-sm font-medium">{item.sortOrder}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted">
+                                <LinkIcon className="h-3 w-3" />
+                              </div>
+                              <span className="font-medium">{item.label}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <code className="text-xs text-muted-foreground bg-muted px-1 py-0.5 rounded">
+                                {item.url}
+                              </code>
+                              {item.target === "_blank" && (
+                                <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="text-xs">
+                              {item.target === "_blank" ? "New Tab" : "Same Tab"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onClick={() => handleDeleteItem(item.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
-                <div className="text-center py-16">
-                  <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Navigation className="h-12 w-12 text-slate-400" />
+                <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <Navigation className="h-6 w-6 text-muted-foreground" />
                   </div>
-                  <h3 className="text-xl font-semibold text-slate-900 mb-2">No menu items yet</h3>
-                  <p className="text-slate-600">Add your first menu item to get started.</p>
+                  <h3 className="mt-4 text-lg font-semibold">No menu items</h3>
+                  <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                    Add your first menu item to get started building your navigation.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -214,50 +308,49 @@ export default function ManageNavigationPage({ params }: ManageNavigationPagePro
         </div>
 
         {/* Add New Item Form */}
-        <div>
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="border-b border-slate-100">
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5 text-amber-600" />
+                <Plus className="h-4 w-4" />
                 Add Menu Item
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Create a new navigation item
+              </p>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="space-y-4">
               <form onSubmit={handleAddItem} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="label" className="text-sm font-semibold text-slate-700">
-                    Label *
+                  <Label htmlFor="label">
+                    Label <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="label"
                     value={newItem.label}
                     onChange={(e) => setNewItem(prev => ({ ...prev, label: e.target.value }))}
-                    placeholder="Home"
-                    className="h-12"
+                    placeholder="e.g. Home, About Us"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="url" className="text-sm font-semibold text-slate-700">
-                    URL *
+                  <Label htmlFor="url">
+                    URL <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="url"
                     value={newItem.url}
                     onChange={(e) => setNewItem(prev => ({ ...prev, url: e.target.value }))}
-                    placeholder="/"
-                    className="h-12"
+                    placeholder="e.g. /, /about, https://example.com"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="target" className="text-sm font-semibold text-slate-700">
-                    Target
-                  </Label>
+                  <Label htmlFor="target">Link Target</Label>
                   <Select value={newItem.target} onValueChange={(value) => setNewItem(prev => ({ ...prev, target: value }))}>
-                    <SelectTrigger className="h-12">
+                    <SelectTrigger id="target">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -268,38 +361,63 @@ export default function ManageNavigationPage({ params }: ManageNavigationPagePro
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sortOrder" className="text-sm font-semibold text-slate-700">
-                    Sort Order
-                  </Label>
+                  <Label htmlFor="sortOrder">Sort Order</Label>
                   <Input
                     id="sortOrder"
                     type="number"
                     value={newItem.sortOrder}
                     onChange={(e) => setNewItem(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
                     placeholder="0"
-                    className="h-12"
                     min="0"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Lower numbers appear first
+                  </p>
                 </div>
 
                 <Button 
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                  className="w-full"
                 >
                   {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
                       Adding...
-                    </div>
+                    </>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="mr-2 h-4 w-4" />
                       Add Item
                     </>
                   )}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Help Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tips</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="space-y-1">
+                <p className="font-medium">URL Examples:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Internal: <code className="bg-muted px-1 rounded">/about</code></li>
+                  <li>• External: <code className="bg-muted px-1 rounded">https://example.com</code></li>
+                  <li>• Anchor: <code className="bg-muted px-1 rounded">#contact</code></li>
+                </ul>
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium">Best Practices:</p>
+                <ul className="space-y-1 text-muted-foreground">
+                  <li>• Keep labels short and descriptive</li>
+                  <li>• Use consistent naming conventions</li>
+                  <li>• Test external links regularly</li>
+                </ul>
+              </div>
             </CardContent>
           </Card>
         </div>

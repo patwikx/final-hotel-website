@@ -25,7 +25,9 @@ import {
   Trash2, 
   FileText,
   Calendar,
-  User
+  User,
+  Filter,
+  Settings
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
@@ -42,88 +44,100 @@ export default async function PagesManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PUBLISHED': return 'bg-green-100 text-green-800'
-      case 'DRAFT': return 'bg-yellow-100 text-yellow-800'
-      case 'SCHEDULED': return 'bg-blue-100 text-blue-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'PUBLISHED': return 'default'
+      case 'DRAFT': return 'secondary'
+      case 'SCHEDULED': return 'outline'
+      default: return 'secondary'
+    }
+  }
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'PUBLISHED': return 'bg-green-50 text-green-700 border-green-200'
+      case 'DRAFT': return 'bg-yellow-50 text-yellow-700 border-yellow-200'
+      case 'SCHEDULED': return 'bg-blue-50 text-blue-700 border-blue-200'
+      default: return 'bg-gray-50 text-gray-700 border-gray-200'
     }
   }
 
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Pages</h1>
-          <p className="text-slate-600 mt-1">Manage your website pages and content</p>
+      <div className="flex flex-col space-y-4 md:flex-row md:items-start md:justify-between md:space-y-0">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Pages</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your website pages and content
+          </p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+        
+        <Button size="sm" asChild>
           <Link href="/admin/cms/pages/new">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Create Page
           </Link>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <FileText className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center space-x-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <FileText className="h-4 w-4" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{pages.length}</p>
-                <p className="text-sm text-slate-600">Total Pages</p>
+              <div className="space-y-1">
+                <p className="text-2xl font-semibold">{pages.length}</p>
+                <p className="text-sm text-muted-foreground">Total Pages</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Eye className="h-6 w-6 text-green-600" />
+            <div className="flex items-center space-x-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
+                <Eye className="h-4 w-4 text-green-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="space-y-1">
+                <p className="text-2xl font-semibold">
                   {pages.filter(p => p.status === 'PUBLISHED').length}
                 </p>
-                <p className="text-sm text-slate-600">Published</p>
+                <p className="text-sm text-muted-foreground">Published</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Edit className="h-6 w-6 text-yellow-600" />
+            <div className="flex items-center space-x-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+                <Edit className="h-4 w-4 text-yellow-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="space-y-1">
+                <p className="text-2xl font-semibold">
                   {pages.filter(p => p.status === 'DRAFT').length}
                 </p>
-                <p className="text-sm text-slate-600">Drafts</p>
+                <p className="text-sm text-muted-foreground">Drafts</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card>
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center space-x-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                <Calendar className="h-4 w-4 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="space-y-1">
+                <p className="text-2xl font-semibold">
                   {pages.filter(p => p.status === 'SCHEDULED').length}
                 </p>
-                <p className="text-sm text-slate-600">Scheduled</p>
+                <p className="text-sm text-muted-foreground">Scheduled</p>
               </div>
             </div>
           </CardContent>
@@ -131,18 +145,31 @@ export default async function PagesManagement() {
       </div>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
+      <Card>
+        <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Pages</CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                All Pages
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {pages.length} pages total
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search pages..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-64"
                 />
               </div>
+              <Button variant="outline" size="sm">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -150,41 +177,48 @@ export default async function PagesManagement() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">Title</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Author</TableHead>
-                <TableHead className="font-semibold text-slate-700">Last Modified</TableHead>
-                <TableHead className="font-semibold text-slate-700">Template</TableHead>
+              <TableRow>
+                <TableHead className="font-medium">Title</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Author</TableHead>
+                <TableHead className="font-medium">Last Modified</TableHead>
+                <TableHead className="font-medium">Template</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pages.map((page) => (
-                <TableRow key={page.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
+                <TableRow key={page.id}>
                   <TableCell>
-                    <div>
-                      <p className="font-semibold text-slate-900">{page.title}</p>
-                      <p className="text-sm text-slate-500">/{page.slug}</p>
+                    <div className="space-y-1">
+                      <p className="font-medium">{page.title}</p>
+                      <p className="text-sm text-muted-foreground">/{page.slug}</p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${getStatusColor(page.status)} border-0`}>
-                      {page.status}
+                    <Badge 
+                      variant={getStatusColor(page.status)}
+                      className={getStatusBadgeColor(page.status)}
+                    >
+                      {page.status.charAt(0).toUpperCase() + page.status.slice(1).toLowerCase()}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center">
-                        <User className="h-3 w-3 text-slate-600" />
+                    <div className="flex items-center space-x-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+                        <User className="h-3 w-3" />
                       </div>
-                      <span className="text-sm text-slate-700">
+                      <span className="text-sm">
                         {page.author.firstName} {page.author.lastName}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {new Date(page.updatedAt).toLocaleDateString()}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(page.updatedAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
@@ -196,21 +230,26 @@ export default async function PagesManagement() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/cms/pages/${page.id}`}>
-                            <Edit className="h-4 w-4 mr-2" />
+                            <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="mr-2 h-4 w-4" />
                           Preview
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="h-4 w-4 mr-2" />
+                        <DropdownMenuItem>
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 focus:text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -218,6 +257,22 @@ export default async function PagesManagement() {
                   </TableCell>
                 </TableRow>
               ))}
+              {pages.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
+                    <div className="flex flex-col items-center space-y-2">
+                      <FileText className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">No pages found</p>
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href="/admin/cms/pages/new">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create your first page
+                        </Link>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

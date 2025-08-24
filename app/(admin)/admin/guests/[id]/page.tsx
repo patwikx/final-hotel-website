@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Table, 
@@ -23,12 +24,16 @@ import {
   Mail,
   MapPin,
   Edit,
-  Plus
+  Plus,
+  Users,
+  DollarSign,
+  Clock,
+  MoreVertical
 } from "lucide-react"
 import Link from "next/link"
 import { Guest, Reservation } from "@prisma/client"
+import { Label } from "@/components/ui/label"
 import { getGuestById } from "@/services/guest-services"
-
 
 interface GuestDetailPageProps {
   params: Promise<{ id: string }>
@@ -69,159 +74,281 @@ export default function GuestDetailPage({ params }: GuestDetailPageProps) {
     loadGuest()
   }, [params, router])
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'CONFIRMED': return 'bg-green-100 text-green-800'
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800'
-      case 'CHECKED_IN': return 'bg-blue-100 text-blue-800'
-      case 'CHECKED_OUT': return 'bg-slate-100 text-slate-800'
-      case 'CANCELLED': return 'bg-red-100 text-red-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'CONFIRMED': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'PENDING': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      case 'CHECKED_IN': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      case 'CHECKED_OUT': 
+        return { variant: "outline" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
+      case 'CANCELLED': 
+        return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
     }
+  }
+
+  const formatStatusText = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   if (isLoading || !guest) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+      <div className="flex-1 space-y-8 p-8 pt-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
       </div>
     )
   }
 
+  const totalSpent = guest.reservations?.reduce((sum, reservation) => 
+    sum + Number(reservation.totalAmount), 0
+  ) || 0
+
+  const totalNights = guest.reservations?.reduce((sum, reservation) => 
+    sum + (reservation.nights || 0), 0
+  ) || 0
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/guests">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Guests
-            </Link>
-          </Button>
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-slate-900 font-serif">
-                {guest.firstName} {guest.lastName}
-              </h1>
-              {guest.vipStatus && (
-                <Badge className="bg-amber-100 text-amber-800 border-0">
-                  <Star className="h-3 w-3 mr-1" />
-                  VIP
-                </Badge>
-              )}
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Back Navigation */}
+      <div className="flex items-center space-x-2">
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+          <Link href="/admin/guests">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Guests
+          </Link>
+        </Button>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-sm font-medium text-foreground">{guest.firstName} {guest.lastName}</span>
+      </div>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">{guest.firstName} {guest.lastName}</h1>
+            {guest.vipStatus && (
+              <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 font-medium">
+                <Star className="mr-1 h-3 w-3" />
+                VIP Guest
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              <span className="font-medium">{guest.email}</span>
             </div>
-            <p className="text-slate-600">{guest.email}</p>
+            {guest.phone && (
+              <>
+                <Separator orientation="vertical" className="hidden h-4 md:block" />
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Phone className="h-4 w-4" />
+                  <span className="font-medium">{guest.phone}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
             <Link href={`/admin/guests/${guest.id}/edit`}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Profile
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
             </Link>
           </Button>
-          <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
+          <Button size="sm" asChild>
             <Link href={`/admin/reservations/new?guest=${guest.id}`}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               New Reservation
             </Link>
           </Button>
         </div>
       </div>
 
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
+                <p className="text-2xl font-bold tabular-nums">{guest.reservations?.length || 0}</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Calendar className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Spent</p>
+                <p className="text-2xl font-bold tabular-nums">₱{totalSpent.toLocaleString()}</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Nights Stayed</p>
+                <p className="text-2xl font-bold tabular-nums">{totalNights}</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <Clock className="h-5 w-5 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Member Since</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {new Date(guest.createdAt).getFullYear()}
+                </p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <Users className="h-5 w-5 text-amber-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Tabs */}
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 bg-slate-100">
-          <TabsTrigger value="profile" className="data-[state=active]:bg-white">Profile</TabsTrigger>
-          <TabsTrigger value="reservations" className="data-[state=active]:bg-white">Reservations</TabsTrigger>
-          <TabsTrigger value="preferences" className="data-[state=active]:bg-white">Preferences</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3 h-auto p-1">
+          <TabsTrigger 
+            value="profile" 
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Profile
+          </TabsTrigger>
+          <TabsTrigger 
+            value="reservations"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Reservations
+          </TabsTrigger>
+          <TabsTrigger 
+            value="preferences"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Preferences
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Guest Information */}
-            <div className="lg:col-span-2">
-              <Card className="border-0 shadow-lg">
-                <CardHeader className="border-b border-slate-100">
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-amber-600" />
-                    Personal Information
-                  </CardTitle>
+        <TabsContent value="profile" className="space-y-4 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Profile Content */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="border-border">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1.5">
+                      <CardTitle className="text-xl flex items-center gap-2">
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        Personal Information
+                      </CardTitle>
+                      <CardDescription className="text-sm leading-relaxed">
+                        Complete guest profile and contact details
+                      </CardDescription>
+                    </div>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                          <span className="text-xl font-bold text-blue-600">
-                            {guest.firstName.charAt(0)}{guest.lastName.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-slate-900">
-                            {guest.firstName} {guest.lastName}
-                          </h3>
-                          {guest.title && (
-                            <p className="text-slate-600">{guest.title}</p>
-                          )}
-                        </div>
-                      </div>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+                      <span className="font-medium text-muted-foreground">
+                        {guest.firstName.charAt(0)}{guest.lastName.charAt(0)}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-lg font-medium">
+                        {guest.firstName} {guest.lastName}
+                      </h3>
+                      {guest.title && (
+                        <p className="text-sm text-muted-foreground">{guest.title}</p>
+                      )}
+                    </div>
+                  </div>
 
-                      <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Contact Information</h4>
+                      <div className="space-y-3">
                         <div className="flex items-center gap-3">
-                          <Mail className="h-5 w-5 text-slate-400" />
-                          <span className="text-slate-700">{guest.email}</span>
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{guest.email}</span>
                         </div>
                         
                         {guest.phone && (
                           <div className="flex items-center gap-3">
-                            <Phone className="h-5 w-5 text-slate-400" />
-                            <span className="text-slate-700">{guest.phone}</span>
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{guest.phone}</span>
                           </div>
                         )}
                         
                         {guest.address && (
                           <div className="flex items-start gap-3">
-                            <MapPin className="h-5 w-5 text-slate-400 mt-0.5" />
-                            <span className="text-slate-700">{guest.address}</span>
+                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                            <span className="text-sm">{guest.address}</span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-6">
-                      <div>
-                        <h4 className="font-semibold text-slate-900 mb-4">Additional Details</h4>
-                        <div className="space-y-3 text-sm">
-                          {guest.dateOfBirth && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-600">Date of Birth:</span>
-                              <span className="text-slate-900">{new Date(guest.dateOfBirth).toLocaleDateString()}</span>
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Additional Details</h4>
+                      <div className="space-y-3">
+                        {guest.dateOfBirth && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-muted-foreground">Date of Birth</Label>
+                            <div className="text-sm font-medium">
+                              {new Date(guest.dateOfBirth).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
                             </div>
-                          )}
-                          
-                          {guest.nationality && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-600">Nationality:</span>
-                              <span className="text-slate-900">{guest.nationality}</span>
-                            </div>
-                          )}
-                          
-                          {guest.loyaltyNumber && (
-                            <div className="flex justify-between">
-                              <span className="text-slate-600">Loyalty Number:</span>
-                              <span className="text-slate-900 font-mono">{guest.loyaltyNumber}</span>
-                            </div>
-                          )}
-                          
-                          <div className="flex justify-between">
-                            <span className="text-slate-600">Marketing Opt-in:</span>
-                            <Badge className={guest.marketingOptIn ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                              {guest.marketingOptIn ? 'Yes' : 'No'}
-                            </Badge>
                           </div>
-                        </div>
+                        )}
+                        
+                        {guest.nationality && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-muted-foreground">Nationality</Label>
+                            <div className="text-sm font-medium">{guest.nationality}</div>
+                          </div>
+                        )}
+                        
+                        {guest.loyaltyNumber && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-muted-foreground">Loyalty Number</Label>
+                            <div className="text-sm font-medium font-mono">{guest.loyaltyNumber}</div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -229,26 +356,56 @@ export default function GuestDetailPage({ params }: GuestDetailPageProps) {
               </Card>
             </div>
 
-            {/* Quick Stats */}
+            {/* Sidebar */}
             <div className="space-y-6">
-              <Card className="border-0 shadow-lg">
-                <CardHeader className="border-b border-slate-100">
-                  <CardTitle>Guest Statistics</CardTitle>
+              <Card className="border-border">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl">Guest Status</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-700">{guest.reservations?.length || 0}</div>
-                    <div className="text-sm text-blue-600">Total Bookings</div>
-                  </div>
-                  
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-700">₱0</div>
-                    <div className="text-sm text-green-600">Total Spent</div>
-                  </div>
-                  
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-700">0</div>
-                    <div className="text-sm text-purple-600">Nights Stayed</div>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    {guest.vipStatus && (
+                      <Badge className="w-full justify-center bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 font-medium">
+                        <Star className="mr-2 h-4 w-4" />
+                        VIP Member
+                      </Badge>
+                    )}
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Marketing Opt-in</span>
+                      <Badge 
+                        variant={guest.marketingOptIn ? "default" : "secondary"}
+                        className={guest.marketingOptIn 
+                          ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" 
+                          : "bg-red-50 text-red-700 border-red-200 hover:bg-red-50"
+                        }
+                      >
+                        {guest.marketingOptIn ? 'Subscribed' : 'Unsubscribed'}
+                      </Badge>
+                    </div>
+
+                    <Separator />
+                    
+                    <div className="text-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-muted-foreground">Member Since</span>
+                        <span className="font-medium">
+                          {new Date(guest.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Last Updated</span>
+                        <span className="font-medium">
+                          {new Date(guest.updatedAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -256,88 +413,122 @@ export default function GuestDetailPage({ params }: GuestDetailPageProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="reservations">
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="border-b border-slate-100">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-amber-600" />
-                Reservation History
-              </CardTitle>
+        <TabsContent value="reservations" className="space-y-4 mt-6">
+          <Card className="border-border">
+            <CardHeader className="pb-4">
+              <div className="space-y-1.5">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  Reservation History
+                </CardTitle>
+                <CardDescription className="text-sm leading-relaxed">
+                  Complete booking history for this guest
+                </CardDescription>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {guest.reservations && guest.reservations.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-slate-100">
-                      <TableHead className="font-semibold text-slate-700">Confirmation</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Dates</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Total</TableHead>
-                      <TableHead className="font-semibold text-slate-700">Created</TableHead>
+                    <TableRow>
+                      <TableHead className="font-medium">Confirmation</TableHead>
+                      <TableHead className="font-medium">Check-in Date</TableHead>
+                      <TableHead className="font-medium">Duration</TableHead>
+                      <TableHead className="font-medium">Status</TableHead>
+                      <TableHead className="font-medium">Total Amount</TableHead>
+                      <TableHead className="font-medium">Created</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {guest.reservations.map((reservation) => (
-                      <TableRow key={reservation.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
-                        <TableCell>
-                          <Link 
-                            href={`/admin/reservations/${reservation.id}`}
-                            className="font-mono text-sm text-amber-600 hover:text-amber-700 font-medium"
-                          >
-                            {reservation.confirmationNumber}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div className="font-medium text-slate-900">
-                              {new Date(reservation.checkInDate).toLocaleDateString()}
+                    {guest.reservations.map((reservation) => {
+                      const statusConfig = getStatusVariant(reservation.status)
+                      return (
+                        <TableRow key={reservation.id}>
+                          <TableCell>
+                            <Link 
+                              href={`/admin/reservations/${reservation.id}`}
+                              className="font-mono text-sm text-primary hover:underline font-medium"
+                            >
+                              {reservation.confirmationNumber}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm font-medium">
+                              {new Date(reservation.checkInDate).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
                             </div>
-                            <div className="text-slate-500">
-                              to {new Date(reservation.checkOutDate).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm font-medium">
+                              {reservation.nights || 0} nights
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getStatusColor(reservation.status)} border-0`}>
-                            {reservation.status.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-semibold text-slate-900">
-                            ₱{Number(reservation.totalAmount).toLocaleString()}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm text-slate-600">
-                          {new Date(reservation.createdAt).toLocaleDateString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={statusConfig.variant}
+                              className={`font-medium ${statusConfig.className}`}
+                            >
+                              {formatStatusText(reservation.status)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium tabular-nums">
+                              ₱{Number(reservation.totalAmount).toLocaleString()}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {new Date(reservation.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               ) : (
-                <div className="text-center py-16">
-                  <Calendar className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-600">No reservations found</p>
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-4">
+                    <Calendar className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium mb-1">No reservations found</h3>
+                  <p className="text-sm text-muted-foreground">Guest bookings will appear here</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="preferences">
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="border-b border-slate-100">
-              <CardTitle>Guest Preferences & Notes</CardTitle>
+        <TabsContent value="preferences" className="space-y-4 mt-6">
+          <Card className="border-border">
+            <CardHeader className="pb-4">
+              <div className="space-y-1.5">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <User className="h-5 w-5 text-muted-foreground" />
+                  Guest Preferences & Notes
+                </CardTitle>
+                <CardDescription className="text-sm leading-relaxed">
+                  Personal preferences and staff notes for this guest
+                </CardDescription>
+              </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent>
               {guest.notes ? (
-                <div className="bg-slate-50 rounded-lg p-4 text-slate-700">
+                <div className="rounded-lg bg-muted p-4 text-sm">
                   {guest.notes}
                 </div>
               ) : (
-                <div className="text-center py-12 text-slate-500">
-                  <User className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-                  <p>No preferences or notes recorded</p>
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-12 text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-4">
+                    <User className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium mb-1">No preferences recorded</h3>
+                  <p className="text-sm text-muted-foreground">Guest notes and preferences will appear here</p>
                 </div>
               )}
             </CardContent>

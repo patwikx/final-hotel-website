@@ -40,7 +40,6 @@ type UserWithRoles = User & {
     })[];
 };
 
-
 export default async function UsersManagement() {
   const users: UserWithRoles[] = await prisma.user.findMany({
     include: {
@@ -59,27 +58,38 @@ export default async function UsersManagement() {
     orderBy: { createdAt: 'desc' }
   })
 
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': return 'default'
+      case 'INACTIVE': return 'destructive'
+      case 'SUSPENDED': return 'secondary'
+      case 'PENDING_ACTIVATION': return 'outline'
+      default: return 'outline'
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800'
-      case 'INACTIVE': return 'bg-red-100 text-red-800'
-      case 'SUSPENDED': return 'bg-orange-100 text-orange-800'
-      case 'PENDING_ACTIVATION': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'ACTIVE': return 'bg-green-50 text-green-700 border-green-200'
+      case 'INACTIVE': return 'bg-red-50 text-red-700 border-red-200'
+      case 'SUSPENDED': return 'bg-orange-50 text-orange-700 border-orange-200'
+      case 'PENDING_ACTIVATION': return 'bg-yellow-50 text-yellow-700 border-yellow-200'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="flex-1 space-y-8 p-8 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Users</h1>
-          <p className="text-slate-600 mt-1">Manage system users and permissions</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+          <p className="text-muted-foreground">Manage system users and permissions</p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+        
+        <Button asChild>
           <Link href="/admin/users/new">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add User
           </Link>
         </Button>
@@ -87,63 +97,63 @@ export default async function UsersManagement() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <Users className="h-6 w-6 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{users.length}</p>
-                <p className="text-sm text-slate-600">Total Users</p>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">{users.length}</p>
+                <p className="text-sm text-muted-foreground">Total Users</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                 <UserCheck className="h-6 w-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">
                   {users.filter(u => u.status === 'ACTIVE').length}
                 </p>
-                <p className="text-sm text-slate-600">Active</p>
+                <p className="text-sm text-muted-foreground">Active</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
                 <Shield className="h-6 w-6 text-purple-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">
                   {users.filter(u => u.assignments.some(r => r.role.displayName === 'Administrator')).length}
                 </p>
-                <p className="text-sm text-slate-600">Admins</p>
+                <p className="text-sm text-muted-foreground">Admins</p>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Mail className="h-6 w-6 text-amber-600" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                <Mail className="h-6 w-6 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">
                   {users.filter(u => u.emailVerifiedAt).length}
                 </p>
-                <p className="text-sm text-slate-600">Verified</p>
+                <p className="text-sm text-muted-foreground">Verified</p>
               </div>
             </div>
           </CardContent>
@@ -151,16 +161,19 @@ export default async function UsersManagement() {
       </div>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Users</CardTitle>
-            <div className="flex items-center gap-4">
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1.5">
+              <CardTitle className="text-xl">All Users</CardTitle>
+            </div>
+            
+            <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search users..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-80"
                 />
               </div>
               <Button variant="outline" size="sm">
@@ -174,39 +187,39 @@ export default async function UsersManagement() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">User</TableHead>
-                <TableHead className="font-semibold text-slate-700">Email</TableHead>
-                <TableHead className="font-semibold text-slate-700">Roles</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Last Login</TableHead>
-                <TableHead className="font-semibold text-slate-700">Created</TableHead>
+              <TableRow>
+                <TableHead className="font-medium">User</TableHead>
+                <TableHead className="font-medium">Email</TableHead>
+                <TableHead className="font-medium">Roles</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Last Login</TableHead>
+                <TableHead className="font-medium">Created</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
+                <TableRow key={user.id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                        <span className="font-semibold text-blue-600">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <span className="text-sm font-medium text-primary">
                           {user.firstName.charAt(0)}{user.lastName.charAt(0)}
                         </span>
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">
+                      <div className="space-y-1">
+                        <div className="font-medium">
                           {user.firstName} {user.lastName}
-                        </p>
-                        <p className="text-sm text-slate-500">@{user.username}</p>
+                        </div>
+                        <div className="text-sm text-muted-foreground">@{user.username}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-700">{user.email}</span>
+                      <span className="text-sm">{user.email}</span>
                       {user.emailVerifiedAt && (
-                        <Badge className="bg-green-100 text-green-800 border-0 text-xs">
+                        <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 text-xs">
                           Verified
                         </Badge>
                       )}
@@ -215,22 +228,30 @@ export default async function UsersManagement() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {user.assignments.map((assignment) => (
-                        <Badge key={`${assignment.businessUnitId}-${assignment.roleId}`} variant="outline" className="text-xs">
+                        <Badge 
+                          key={`${assignment.businessUnitId}-${assignment.roleId}`} 
+                          variant="outline" 
+                          className="text-xs"
+                        >
                           {assignment.role.displayName}
                         </Badge>
                       ))}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${getStatusColor(user.status)} border-0`}>
+                    <Badge className={getStatusColor(user.status)}>
                       {user.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
+                  <TableCell>
+                    <div className="text-sm text-muted-foreground">
+                      {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
+                    </div>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                  <TableCell>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -250,7 +271,7 @@ export default async function UsersManagement() {
                           <Eye className="h-4 w-4 mr-2" />
                           View Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem className="text-destructive">
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>

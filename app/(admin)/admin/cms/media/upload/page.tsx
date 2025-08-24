@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { 
   Upload, 
   ArrowLeft, 
@@ -17,8 +18,10 @@ import {
   Video, 
   Music,
   X,
-  CheckCircle,
-  AlertCircle
+  CheckCircle2,
+  AlertCircle,
+  FileIcon,
+  CloudUpload
 } from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
@@ -126,94 +129,172 @@ export default function UploadMediaPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const getFileTypeCount = (type: string) => {
+    return files.filter(f => f.file.type.startsWith(type)).length
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/cms/media">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Media
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Upload Media</h1>
-            <p className="text-slate-600 mt-1">Add images, videos, and documents to your media library</p>
+      <div className="flex flex-col space-y-4 md:flex-row md:items-start md:justify-between md:space-y-0">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+              <Link href="/admin/cms/media">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Media
+              </Link>
+            </Button>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-sm font-medium text-foreground">Upload Files</span>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Upload Media</h1>
+            <p className="text-sm text-muted-foreground">
+              Add images, videos, and documents to your media library
+            </p>
           </div>
         </div>
         
         {files.length > 0 && (
-          <Button 
-            onClick={uploadFiles}
-            disabled={isUploading || files.every(f => f.status === 'success')}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0"
-          >
-            {isUploading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Uploading...
-              </div>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload {files.length} File{files.length > 1 ? 's' : ''}
-              </>
-            )}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="outline"
+              onClick={() => setFiles([])}
+              disabled={isUploading}
+              size="sm"
+            >
+              Clear All
+            </Button>
+            <Button 
+              onClick={uploadFiles}
+              disabled={isUploading || files.every(f => f.status === 'success')}
+              size="sm"
+            >
+              {isUploading ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload {files.length} file{files.length > 1 ? 's' : ''}
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Upload Progress Summary */}
+      {files.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex items-center space-x-2">
+                  <div className="rounded-full bg-primary/10 p-2">
+                    <FileIcon className="h-4 w-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">Total Files</p>
+                    <p className="text-xs text-muted-foreground">{files.length} selected</p>
+                  </div>
+                </div>
+                <Badge variant="secondary">{files.length}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex items-center space-x-2">
+                  <div className="rounded-full bg-green-100 p-2 dark:bg-green-900">
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">Uploaded</p>
+                    <p className="text-xs text-muted-foreground">Successfully uploaded</p>
+                  </div>
+                </div>
+                <Badge variant="secondary">{files.filter(f => f.status === 'success').length}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between space-x-2">
+                <div className="flex items-center space-x-2">
+                  <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900">
+                    <CloudUpload className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">Total Size</p>
+                    <p className="text-xs text-muted-foreground">Combined file size</p>
+                  </div>
+                </div>
+                <Badge variant="secondary">
+                  {formatFileSize(files.reduce((sum, f) => sum + f.file.size, 0))}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Upload Area */}
-        <div className="lg:col-span-2">
-          <Card className="border-0 shadow-lg">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5 text-amber-600" />
-                File Upload
-              </CardTitle>
+              <CardTitle>File Upload</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Drag and drop your files here or click to browse
+              </p>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent>
               {/* Drop Zone */}
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 cursor-pointer ${
+                className={`relative cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
                   isDragOver 
-                    ? 'border-amber-400 bg-amber-50' 
-                    : 'border-slate-200 hover:border-amber-300 hover:bg-amber-50/50'
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-muted-foreground/25 hover:border-primary/50'
                 }`}
               >
-                <input
+                <Input
                   type="file"
                   multiple
                   accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
                   onChange={handleFileSelect}
-                  className="hidden"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   id="file-upload"
                 />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <div className="w-16 h-16 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Upload className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                  <CloudUpload className="h-6 w-6 text-primary" />
+                </div>
+                
+                <div className="mt-4 space-y-2">
+                  <h3 className="text-lg font-semibold">
                     {isDragOver ? 'Drop files here' : 'Upload your files'}
                   </h3>
-                  <p className="text-slate-600 mb-4">
-                    Drag and drop files here, or click to browse
+                  <p className="text-sm text-muted-foreground">
+                    Choose files or drag and drop them here
                   </p>
-                  <div className="flex items-center justify-center gap-4 text-sm text-slate-500">
-                    <span>Images</span>
-                    <span>•</span>
-                    <span>Videos</span>
-                    <span>•</span>
-                    <span>Documents</span>
-                    <span>•</span>
-                    <span>Up to 10MB</span>
-                  </div>
-                </label>
+                </div>
+                
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  <Badge variant="outline">Images</Badge>
+                  <Badge variant="outline">Videos</Badge>
+                  <Badge variant="outline">Documents</Badge>
+                  <Badge variant="outline">Max 10MB</Badge>
+                </div>
               </div>
 
               {/* File List */}
@@ -223,13 +304,23 @@ export default function UploadMediaPage() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-8 space-y-4"
+                    className="mt-6 space-y-4"
                   >
-                    <h4 className="font-semibold text-slate-900 flex items-center gap-2">
-                      Selected Files ({files.length})
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">
+                        Selected Files ({files.length})
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFiles([])}
+                        disabled={isUploading}
+                      >
+                        Clear all
+                      </Button>
+                    </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {files.map((uploadFile) => {
                         const FileIcon = getFileIcon(uploadFile.file.type)
                         
@@ -239,33 +330,33 @@ export default function UploadMediaPage() {
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 20 }}
-                            className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200"
+                            className="flex items-center gap-3 rounded-lg border p-3"
                           >
                             {/* File Preview/Icon */}
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border border-slate-200 flex items-center justify-center">
+                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border bg-muted">
                               {uploadFile.preview ? (
                                 <img 
                                   src={uploadFile.preview} 
                                   alt={uploadFile.file.name}
-                                  className="w-full h-full object-cover"
+                                  className="h-full w-full rounded-md object-cover"
                                 />
                               ) : (
-                                <FileIcon className="h-6 w-6 text-slate-600" />
+                                <FileIcon className="h-5 w-5 text-muted-foreground" />
                               )}
                             </div>
 
                             {/* File Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-slate-900 truncate">
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">
                                 {uploadFile.file.name}
                               </p>
-                              <p className="text-sm text-slate-600">
+                              <p className="text-xs text-muted-foreground">
                                 {formatFileSize(uploadFile.file.size)}
                               </p>
                               
                               {/* Progress Bar */}
                               {uploadFile.status === 'uploading' && (
-                                <div className="mt-2">
+                                <div className="mt-1">
                                   <Progress value={uploadFile.progress} className="h-1" />
                                 </div>
                               )}
@@ -274,17 +365,24 @@ export default function UploadMediaPage() {
                             {/* Status */}
                             <div className="flex items-center gap-2">
                               {uploadFile.status === 'success' && (
-                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                <div className="rounded-full bg-green-100 p-1 dark:bg-green-900">
+                                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                </div>
                               )}
                               {uploadFile.status === 'error' && (
-                                <AlertCircle className="h-5 w-5 text-red-600" />
+                                <div className="rounded-full bg-red-100 p-1 dark:bg-red-900">
+                                  <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                </div>
+                              )}
+                              {uploadFile.status === 'uploading' && (
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary" />
                               )}
                               {uploadFile.status === 'pending' && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => removeFile(uploadFile.id)}
-                                  className="w-8 h-8 p-0 hover:bg-red-50 hover:text-red-600"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
@@ -301,17 +399,20 @@ export default function UploadMediaPage() {
           </Card>
         </div>
 
-        {/* Upload Settings */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          <Card className="border-0 shadow-lg">
+          {/* Upload Settings */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Upload Settings</CardTitle>
+              <CardTitle className="text-base">Upload Settings</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">Default Category</Label>
+                <Label htmlFor="category" className="text-sm font-medium">
+                  Default Category
+                </Label>
                 <Select defaultValue="GENERAL">
-                  <SelectTrigger>
+                  <SelectTrigger id="category">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -325,50 +426,80 @@ export default function UploadMediaPage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">Default Alt Text</Label>
-                <Input placeholder="Descriptive text for images..." />
+                <Label htmlFor="alt-text" className="text-sm font-medium">
+                  Default Alt Text
+                </Label>
+                <Input 
+                  id="alt-text"
+                  placeholder="Descriptive text for images..." 
+                />
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">Tags</Label>
-                <Input placeholder="tag1, tag2, tag3" />
+                <Label htmlFor="tags" className="text-sm font-medium">
+                  Tags
+                </Label>
+                <Input 
+                  id="tags"
+                  placeholder="tag1, tag2, tag3" 
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Upload Guidelines */}
-          <Card className="border-0 shadow-lg">
+          {/* File Type Guidelines */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Guidelines</CardTitle>
+              <CardTitle className="text-base">File Guidelines</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-4 text-sm">
+            <CardContent className="space-y-4">
+              <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <ImageIcon className="h-4 w-4 text-blue-600 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-slate-900">Images</p>
-                    <p className="text-slate-600">JPG, PNG, WebP up to 10MB</p>
+                  <div className="rounded-sm bg-blue-100 p-1 dark:bg-blue-900">
+                    <ImageIcon className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium">Images</p>
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, WebP up to 10MB
+                    </p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <Video className="h-4 w-4 text-purple-600 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-slate-900">Videos</p>
-                    <p className="text-slate-600">MP4, WebM up to 100MB</p>
+                  <div className="rounded-sm bg-purple-100 p-1 dark:bg-purple-900">
+                    <Video className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium">Videos</p>
+                    <p className="text-xs text-muted-foreground">
+                      MP4, WebM up to 100MB
+                    </p>
                   </div>
                 </div>
                 
                 <div className="flex items-start gap-3">
-                  <FileText className="h-4 w-4 text-green-600 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-slate-900">Documents</p>
-                    <p className="text-slate-600">PDF, DOC, DOCX up to 25MB</p>
+                  <div className="rounded-sm bg-green-100 p-1 dark:bg-green-900">
+                    <FileText className="h-3 w-3 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium">Documents</p>
+                    <p className="text-xs text-muted-foreground">
+                      PDF, DOC, DOCX up to 25MB
+                    </p>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Help */}
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              <strong>Pro tip:</strong> For best results, compress images before uploading and use descriptive filenames.
+            </AlertDescription>
+          </Alert>
         </div>
       </div>
     </div>

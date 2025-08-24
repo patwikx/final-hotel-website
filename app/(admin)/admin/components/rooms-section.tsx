@@ -40,21 +40,21 @@ interface RoomsSectionProps {
 export function RoomsSection({ property, rooms }: RoomsSectionProps) {
   const getRoomStatusColor = (status: string) => {
     switch (status) {
-      case 'AVAILABLE': return 'bg-green-100 text-green-800'
-      case 'OCCUPIED': return 'bg-blue-100 text-blue-800'
-      case 'OUT_OF_ORDER': return 'bg-red-100 text-red-800'
-      case 'MAINTENANCE': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'AVAILABLE': return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+      case 'OCCUPIED': return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+      case 'OUT_OF_ORDER': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+      case 'MAINTENANCE': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+      default: return 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
     }
   }
 
   const getHousekeepingColor = (status: string) => {
     switch (status) {
-      case 'CLEAN': return 'bg-green-100 text-green-800'
-      case 'DIRTY': return 'bg-red-100 text-red-800'
-      case 'INSPECTED': return 'bg-blue-100 text-blue-800'
-      case 'OUT_OF_ORDER': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'CLEAN': return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+      case 'DIRTY': return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+      case 'INSPECTED': return 'bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100'
+      case 'OUT_OF_ORDER': return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+      default: return 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
     }
   }
 
@@ -75,98 +75,115 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
     outOfOrder: rooms.filter(r => r.status === 'OUT_OF_ORDER').length
   }
 
+  const statCards = [
+    {
+      title: 'Available',
+      value: roomsByStatus.available,
+      icon: CheckCircle,
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Occupied',
+      value: roomsByStatus.occupied,
+      icon: Bed,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600'
+    },
+    {
+      title: 'Maintenance',
+      value: roomsByStatus.maintenance,
+      icon: Wrench,
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600'
+    },
+    {
+      title: 'Out of Order',
+      value: roomsByStatus.outOfOrder,
+      icon: AlertCircle,
+      iconBg: 'bg-red-100',
+      iconColor: 'text-red-600'
+    }
+  ]
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-serif">Rooms</h2>
-          <p className="text-slate-600">Manage individual room inventory and status</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Rooms
+          </h1>
+          <p className="text-muted-foreground leading-relaxed">
+            Manage individual room inventory and status for your property
+          </p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
+        <Button 
+          asChild 
+          size="default"
+          className="shrink-0"
+        >
           <Link href={`/admin/properties/${property.slug}/rooms/new`}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Room
           </Link>
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.available}</p>
-                <p className="text-sm text-slate-600">Available</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Bed className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.occupied}</p>
-                <p className="text-sm text-slate-600">Occupied</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Wrench className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.maintenance}</p>
-                <p className="text-sm text-slate-600">Maintenance</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.outOfOrder}</p>
-                <p className="text-sm text-slate-600">Out of Order</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat) => {
+          const IconComponent = stat.icon
+          return (
+            <Card key={stat.title} className="transition-all hover:shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.iconBg}`}>
+                    <IconComponent className={`h-6 w-6 ${stat.iconColor}`} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-2xl font-bold tabular-nums text-foreground">
+                      {stat.value}
+                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {stat.title}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Rooms Table */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-xl font-bold text-slate-900">All Rooms</CardTitle>
+      <Card className="transition-all hover:shadow-md">
+        <CardHeader className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-semibold text-foreground">
+                All Rooms
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                {rooms.length} {rooms.length === 1 ? 'room' : 'rooms'} total
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {rooms.length > 0 ? (
             <Table>
               <TableHeader>
-                <TableRow className="border-slate-100">
-                  <TableHead className="font-semibold text-slate-700">Room</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Type</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Floor</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Housekeeping</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Last Cleaned</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-semibold text-foreground">Room</TableHead>
+                  <TableHead className="font-semibold text-foreground">Type</TableHead>
+                  <TableHead className="font-semibold text-foreground">Floor</TableHead>
+                  <TableHead className="font-semibold text-foreground">Status</TableHead>
+                  <TableHead className="font-semibold text-foreground">Housekeeping</TableHead>
+                  <TableHead className="font-semibold text-foreground">Last Cleaned</TableHead>
+                  <TableHead className="w-12">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -174,66 +191,98 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
                   const StatusIcon = getRoomStatusIcon(room.status)
                   
                   return (
-                    <TableRow key={room.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
-                            <span className="font-bold text-blue-600">{room.roomNumber}</span>
+                    <TableRow key={room.id} className="group hover:bg-muted/50">
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-50 to-violet-50 border border-blue-200/50">
+                            <span className="text-sm font-bold text-blue-700">
+                              {room.roomNumber}
+                            </span>
                           </div>
-                          <div>
-                            <p className="font-semibold text-slate-900">Room {room.roomNumber}</p>
+                          <div className="space-y-0.5">
+                            <p className="font-medium text-foreground leading-none">
+                              Room {room.roomNumber}
+                            </p>
                             {room.wing && (
-                              <p className="text-sm text-slate-500">{room.wing}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {room.wing}
+                              </p>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-slate-900">{room.roomType.displayName}</p>
-                          <p className="text-sm text-slate-500">{room.roomType.type}</p>
+                      <TableCell className="py-4">
+                        <div className="space-y-0.5">
+                          <p className="font-medium text-foreground leading-none">
+                            {room.roomType.displayName}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {room.roomType.type}
+                          </p>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-700">{room.floor || '-'}</span>
+                      <TableCell className="py-4">
+                        <span className="text-sm font-medium text-foreground tabular-nums">
+                          {room.floor || '—'}
+                        </span>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <StatusIcon className="h-4 w-4 text-slate-400" />
-                          <Badge className={`${getRoomStatusColor(room.status)} border-0`}>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-2">
+                          <StatusIcon className="h-4 w-4 text-muted-foreground" />
+                          <Badge 
+                            variant="secondary" 
+                            className={getRoomStatusColor(room.status)}
+                          >
                             {room.status.replace('_', ' ')}
                           </Badge>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={`${getHousekeepingColor(room.housekeeping)} border-0`}>
-                          {room.housekeeping}
+                      <TableCell className="py-4">
+                        <Badge 
+                          variant="secondary" 
+                          className={getHousekeepingColor(room.housekeeping)}
+                        >
+                          {room.housekeeping.replace('_', ' ')}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600">
-                        {room.lastCleaned ? new Date(room.lastCleaned).toLocaleDateString() : '-'}
+                      <TableCell className="py-4">
+                        <span className="text-sm text-muted-foreground tabular-nums">
+                          {room.lastCleaned 
+                            ? new Date(room.lastCleaned).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })
+                            : '—'
+                          }
+                        </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
                               <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem asChild>
                               <Link href={`/admin/properties/${property.slug}/rooms/${room.id}`}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Room
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem>
-                              <Eye className="h-4 w-4 mr-2" />
+                              <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Room
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -244,16 +293,22 @@ export function RoomsSection({ property, rooms }: RoomsSectionProps) {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-16">
-              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Bed className="h-12 w-12 text-slate-400" />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                <Bed className="h-10 w-10 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">No rooms yet</h3>
-              <p className="text-slate-600 mb-6">Create your first room to start managing inventory.</p>
-              <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
+              <div className="mt-6 space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  No rooms configured
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Get started by adding your first room to begin managing your property inventory.
+                </p>
+              </div>
+              <Button asChild className="mt-6">
                 <Link href={`/admin/properties/${property.slug}/rooms/new`}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Room
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Your First Room
                 </Link>
               </Button>
             </div>

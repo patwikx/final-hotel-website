@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -15,7 +15,8 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { 
   Plus, 
@@ -26,7 +27,13 @@ import {
   Bed,
   Users,
   DollarSign,
-  Settings
+  Settings,
+  Copy,
+  ToggleLeft,
+  ToggleRight,
+  Crown,
+  Home,
+  Building
 } from "lucide-react"
 import { BusinessUnit, RoomType_Model } from "@prisma/client"
 import Link from "next/link"
@@ -37,201 +44,307 @@ interface RoomTypesSectionProps {
 }
 
 export function RoomTypesSection({ property, roomTypes }: RoomTypesSectionProps) {
-  const getRoomTypeColor = (type: string) => {
+  const getRoomTypeConfig = (type: string) => {
     switch (type) {
-      case 'STANDARD': return 'bg-blue-100 text-blue-800'
-      case 'DELUXE': return 'bg-purple-100 text-purple-800'
-      case 'SUITE': return 'bg-amber-100 text-amber-800'
-      case 'VILLA': return 'bg-emerald-100 text-emerald-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'STANDARD': 
+        return { 
+          variant: "secondary" as const, 
+          className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+          icon: Bed
+        }
+      case 'DELUXE': 
+        return { 
+          variant: "secondary" as const, 
+          className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100",
+          icon: Crown
+        }
+      case 'SUITE': 
+        return { 
+          variant: "secondary" as const, 
+          className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100",
+          icon: Building
+        }
+      case 'VILLA': 
+        return { 
+          variant: "secondary" as const, 
+          className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
+          icon: Home
+        }
+      default: 
+        return { 
+          variant: "secondary" as const, 
+          className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100",
+          icon: Bed
+        }
     }
   }
 
+  const statCards = [
+    {
+      title: 'Room Types',
+      value: roomTypes.length,
+      icon: Bed,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600',
+      description: 'Categories'
+    },
+    {
+      title: 'Total Rooms',
+      value: roomTypes.reduce((sum, rt) => sum + rt._count.rooms, 0),
+      icon: Users,
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600',
+      description: 'Available'
+    },
+    {
+      title: 'Starting Rate',
+      value: roomTypes.length > 0 ? `₱${Math.min(...roomTypes.map(rt => Number(rt.baseRate))).toLocaleString()}` : '₱0',
+      icon: DollarSign,
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
+      description: 'Per night'
+    },
+    {
+      title: 'Active Types',
+      value: roomTypes.filter(rt => rt.isActive).length,
+      icon: Settings,
+      iconBg: 'bg-violet-100',
+      iconColor: 'text-violet-600',
+      description: 'Bookable'
+    }
+  ]
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 font-serif">Room Types</h2>
-          <p className="text-slate-600">Manage accommodation categories and pricing</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Room Types
+          </h1>
+          <p className="text-muted-foreground leading-relaxed">
+            Manage accommodation categories, pricing, and availability for your property
+          </p>
         </div>
-<Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-          {/* CORRECTED: Use property.slug for the "new" route */}
+        <Button asChild size="default" className="shrink-0">
           <Link href={`/admin/properties/${property.slug}/room-types/new`}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Room Type
           </Link>
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Bed className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomTypes.length}</p>
-                <p className="text-sm text-slate-600">Room Types</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
-                  {roomTypes.reduce((sum, rt) => sum + rt._count.rooms, 0)}
-                </p>
-                <p className="text-sm text-slate-600">Total Rooms</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
-                  ₱{roomTypes.length > 0 ? Math.min(...roomTypes.map(rt => Number(rt.baseRate))).toLocaleString() : '0'}
-                </p>
-                <p className="text-sm text-slate-600">Starting Rate</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Settings className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
-                  {roomTypes.filter(rt => rt.isActive).length}
-                </p>
-                <p className="text-sm text-slate-600">Active Types</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat) => {
+          const IconComponent = stat.icon
+          return (
+            <Card key={stat.title} className="transition-all hover:shadow-md">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-4">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${stat.iconBg}`}>
+                    <IconComponent className={`h-6 w-6 ${stat.iconColor}`} />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-2xl font-bold tabular-nums text-foreground">
+                      {stat.value}
+                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {stat.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {stat.description}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {/* Room Types Table */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-xl font-bold text-slate-900">All Room Types</CardTitle>
+      <Card className="transition-all hover:shadow-md">
+        <CardHeader className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-semibold text-foreground">
+                All Room Types
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Configure your accommodation categories and their settings
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {roomTypes.length > 0 ? (
             <Table>
               <TableHeader>
-                <TableRow className="border-slate-100">
-                  <TableHead className="font-semibold text-slate-700">Room Type</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Category</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Base Rate</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Occupancy</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Rooms</TableHead>
-                  <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-semibold text-foreground">Room Type</TableHead>
+                  <TableHead className="font-semibold text-foreground">Category</TableHead>
+                  <TableHead className="font-semibold text-foreground">Base Rate</TableHead>
+                  <TableHead className="font-semibold text-foreground">Occupancy</TableHead>
+                  <TableHead className="font-semibold text-foreground text-center">Rooms</TableHead>
+                  <TableHead className="font-semibold text-foreground">Status</TableHead>
+                  <TableHead className="w-12">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {roomTypes.map((roomType) => (
-                  <TableRow key={roomType.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
-                          <Bed className="h-6 w-6 text-blue-600" />
+                {roomTypes.map((roomType) => {
+                  const typeConfig = getRoomTypeConfig(roomType.type)
+                  const TypeIcon = typeConfig.icon
+                  
+                  return (
+                    <TableRow key={roomType.id} className="group hover:bg-muted/50">
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
+                            <TypeIcon className="h-5 w-5 text-slate-600" />
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="font-medium text-foreground leading-none">
+                              {roomType.displayName}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {roomType.name}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">{roomType.displayName}</p>
-                          <p className="text-sm text-slate-500">{roomType.name}</p>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-2">
+                          <TypeIcon className="h-4 w-4 text-muted-foreground" />
+                          <Badge 
+                            variant={typeConfig.variant}
+                            className={typeConfig.className}
+                          >
+                            {roomType.type.replace('_', ' ')}
+                          </Badge>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`${getRoomTypeColor(roomType.type)} border-0`}>
-                        {roomType.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-slate-900">
-                        ₱{Number(roomType.baseRate).toLocaleString()}
-                      </div>
-                      <div className="text-xs text-slate-500">per night</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-slate-400" />
-                        <span className="text-sm text-slate-700">Up to {roomType.maxOccupancy || 2}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center">
-                        <div className="font-semibold text-slate-900">{roomType._count.rooms}</div>
-                        <div className="text-xs text-slate-500">rooms</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={roomType.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                        {roomType.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/properties/${property.slug}/room-types/${roomType.id}`}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/properties/${property.slug}/rooms/${roomType.id}`} target="_blank">
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Live
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="space-y-0.5">
+                          <div className="font-semibold text-foreground tabular-nums">
+                            ₱{Number(roomType.baseRate).toLocaleString('en-US')}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            per night
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">
+                            Up to {roomType.maxOccupancy || 2}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="text-center space-y-0.5">
+                          <div className="text-lg font-bold text-foreground tabular-nums">
+                            {roomType._count.rooms}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {roomType._count.rooms === 1 ? 'room' : 'rooms'}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-2">
+                          {roomType.isActive ? (
+                            <ToggleRight className="h-4 w-4 text-emerald-600" />
+                          ) : (
+                            <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <Badge 
+                            variant="secondary"
+                            className={roomType.isActive 
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
+                              : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                            }
+                          >
+                            {roomType.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-4">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/properties/${property.slug}/room-types/${roomType.id}`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit Room Type
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <Copy className="mr-2 h-4 w-4" />
+                              Duplicate Type
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                              <Link href={`/properties/${property.slug}/rooms/${roomType.id}`} target="_blank">
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Live Page
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                              {roomType.isActive ? (
+                                <>
+                                  <ToggleLeft className="mr-2 h-4 w-4" />
+                                  Deactivate
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleRight className="mr-2 h-4 w-4" />
+                                  Activate
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete Room Type
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-16">
-              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Bed className="h-12 w-12 text-slate-400" />
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                <Bed className="h-10 w-10 text-muted-foreground" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-2">No room types yet</h3>
-              <p className="text-slate-600 mb-6">Create your first room type to start accepting bookings.</p>
-              <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
+              <div className="mt-6 space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  No room types configured
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Create your first room type to start categorizing your accommodations and accepting bookings.
+                </p>
+              </div>
+              <Button asChild className="mt-6">
                 <Link href={`/admin/properties/${property.slug}/room-types/new`}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Room Type
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create First Room Type
                 </Link>
               </Button>
             </div>

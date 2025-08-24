@@ -9,11 +9,15 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
   Navigation, 
-  Settings
+  Settings,
+  Info,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 
@@ -60,36 +64,44 @@ export default function NewNavigationPage() {
     }))
   }
 
+  const isFormValid = formData.name.trim() && formData.slug.trim() && formData.location
+
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/cms/navigation">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Navigation
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Create Navigation Menu</h1>
-            <p className="text-slate-600 mt-1">Set up a new navigation structure</p>
+      <div className="flex flex-col space-y-4 md:flex-row md:items-start md:justify-between md:space-y-0">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+              <Link href="/admin/cms/navigation">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Navigation
+              </Link>
+            </Button>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-sm font-medium text-foreground">Create Menu</span>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Create Navigation Menu</h1>
+            <p className="text-sm text-muted-foreground">
+              Set up a new navigation structure for your website
+            </p>
           </div>
         </div>
         
         <Button 
           onClick={handleSubmit}
-          disabled={isLoading}
-          className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+          disabled={isLoading || !isFormValid}
+          size="sm"
         >
           {isLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <>
+              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
               Creating...
-            </div>
+            </>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="mr-2 h-4 w-4" />
               Create Menu
             </>
           )}
@@ -97,64 +109,74 @@ export default function NewNavigationPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <Navigation className="h-5 w-5 text-amber-600" />
-                  Menu Details
-                </CardTitle>
+            <Card>
+              <CardHeader>
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <Navigation className="h-4 w-4" />
+                    Menu Details
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Basic information about your navigation menu
+                  </p>
+                </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
-                    Menu Name *
+                  <Label htmlFor="name">
+                    Menu Name <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder="Main Header Navigation"
-                    className="h-12"
+                    placeholder="e.g. Main Header Navigation"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    A descriptive name for this menu
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-sm font-semibold text-slate-700">
-                    Slug *
+                  <Label htmlFor="slug">
+                    Slug <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="slug"
                     value={formData.slug}
                     onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                    placeholder="main-header"
-                    className="h-12"
+                    placeholder="e.g. main-header"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    URL-friendly identifier (auto-generated from name)
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-semibold text-slate-700">
-                    Description
-                  </Label>
+                  <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Brief description of this navigation menu..."
-                    className="h-24"
+                    className="min-h-[80px]"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Optional description for internal reference
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location" className="text-sm font-semibold text-slate-700">
-                    Location *
+                  <Label htmlFor="location">
+                    Location <span className="text-destructive">*</span>
                   </Label>
                   <Select value={formData.location} onValueChange={(value) => setFormData(prev => ({ ...prev, location: value }))}>
-                    <SelectTrigger className="h-12">
+                    <SelectTrigger id="location">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -163,26 +185,65 @@ export default function NewNavigationPage() {
                       <SelectItem value="sidebar">Sidebar</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Where this menu will be displayed on your website
+                  </p>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Preview Card */}
+            {(formData.name || formData.slug) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Menu Preview</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                        <Navigation className="h-4 w-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                          {formData.name || "Untitled Menu"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          /{formData.slug || "untitled"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                        {formData.location.charAt(0).toUpperCase() + formData.location.slice(1)}
+                      </Badge>
+                      <Badge variant={formData.isActive ? "default" : "secondary"}>
+                        {formData.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Settings Sidebar */}
           <div className="space-y-6">
-            {/* Status Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Settings className="h-5 w-5 text-amber-600" />
-                  Settings
+            {/* Menu Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Settings className="h-4 w-4" />
+                  Menu Settings
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Active</Label>
-                    <p className="text-xs text-slate-500">Menu is visible on website</p>
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Active</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Menu is visible on website
+                    </p>
                   </div>
                   <Switch 
                     checked={formData.isActive}
@@ -191,6 +252,39 @@ export default function NewNavigationPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Next Steps */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Next Steps</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600" />
+                  <span>Create the menu structure</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <div className="h-4 w-4 mt-0.5 rounded-full border-2 border-muted-foreground/30" />
+                  <span className="text-muted-foreground">Add navigation items</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <div className="h-4 w-4 mt-0.5 rounded-full border-2 border-muted-foreground/30" />
+                  <span className="text-muted-foreground">Configure item order</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <div className="h-4 w-4 mt-0.5 rounded-full border-2 border-muted-foreground/30" />
+                  <span className="text-muted-foreground">Publish menu</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Help */}
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                After creating the menu, you&apos;ll be able to add individual navigation items and organize their structure.
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
       </form>

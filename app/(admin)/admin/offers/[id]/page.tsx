@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
@@ -17,7 +20,13 @@ import {
   DollarSign,
   Image as ImageIcon,
   Trash2,
-  Eye
+  Eye,
+  MoreVertical,
+  AlertCircle,
+  CheckCircle,
+  Calendar,
+  Tag,
+  FileText
 } from "lucide-react"
 import Link from "next/link"
 import { SpecialOffer, OfferType, OfferStatus } from "@prisma/client"
@@ -29,6 +38,8 @@ interface EditOfferPageProps {
 export default function EditOfferPage({ params }: EditOfferPageProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [updateSuccess, setUpdateSuccess] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [offer, setOffer] = useState<SpecialOffer | null>(null)
   const [formData, setFormData] = useState({
     title: "",
@@ -76,11 +87,18 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
     if (!offer) return
     
     setIsLoading(true)
+    setUpdateSuccess(false)
+    setErrors({})
+
     try {
       // await updateOffer(offer.id, formData)
-      router.push('/admin/offers')
+      setUpdateSuccess(true)
+      setTimeout(() => {
+        router.push('/admin/offers')
+      }, 1500)
     } catch (error) {
       console.error('Failed to update offer:', error)
+      setErrors({ general: 'Failed to update offer. Please try again.' })
     } finally {
       setIsLoading(false)
     }
@@ -99,45 +117,117 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
     }
   }
 
+  const updateFormData = (field: keyof typeof formData, value: string | number | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors(prev => {
+        const { [field]: _, ...rest } = prev
+        return rest
+      })
+    }
+  }
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'ACTIVE': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'INACTIVE': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      case 'EXPIRED': 
+        return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
+    }
+  }
+
+  const calculateSavings = () => {
+    if (!formData.originalPrice || !formData.offerPrice) return 0
+    return formData.originalPrice - formData.offerPrice
+  }
+
+  const calculateDiscountPercentage = () => {
+    if (!formData.originalPrice || !formData.offerPrice) return 0
+    return Math.round(((formData.originalPrice - formData.offerPrice) / formData.originalPrice) * 100)
+  }
+
+  if (!offer) {
+    return (
+      <div className="flex-1 space-y-8 p-8 pt-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  const statusConfig = getStatusVariant(formData.status)
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/offers">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Offers
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Edit Special Offer</h1>
-            <p className="text-slate-600 mt-1">Update offer details and settings</p>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Back Navigation */}
+      <div className="flex items-center space-x-2">
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+          <Link href="/admin/offers">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Special Offers
+          </Link>
+        </Button>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-sm font-medium text-foreground">Edit Offer</span>
+      </div>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Edit Special Offer</h1>
+            <Badge 
+              variant={statusConfig.variant}
+              className={`font-medium ${statusConfig.className}`}
+            >
+              {formData.status}
+            </Badge>
+          </div>
+          
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Gift className="h-4 w-4" />
+              <span className="font-medium">{formData.title || "Untitled Offer"}</span>
+            </div>
+            {formData.promoCode && (
+              <>
+                <Separator orientation="vertical" className="hidden h-4 md:block" />
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Tag className="h-4 w-4" />
+                  <span className="font-medium font-mono">{formData.promoCode}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-            <Trash2 className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
-          <Button variant="outline">
-            <Eye className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm">
+            <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
           <Button 
+            size="sm"
             onClick={handleSubmit}
             disabled={isLoading}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
           >
             {isLoading ? (
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
                 Saving...
               </div>
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="mr-2 h-4 w-4" />
                 Save Changes
               </>
             )}
@@ -145,106 +235,188 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
         </div>
       </div>
 
+      {/* Alerts */}
+      {updateSuccess && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            Special offer updated successfully! Redirecting...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {Object.keys(errors).length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {errors.general || 'Please fix the errors below.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Offer Price</p>
+                <p className="text-2xl font-bold tabular-nums">₱{Number(formData.offerPrice).toLocaleString()}</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                <DollarSign className="h-5 w-5 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">You Save</p>
+                <p className="text-2xl font-bold tabular-nums text-green-600">₱{calculateSavings().toLocaleString()}</p>
+                {calculateDiscountPercentage() > 0 && (
+                  <p className="text-xs text-muted-foreground">{calculateDiscountPercentage()}% off</p>
+                )}
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+                <Gift className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Min Nights</p>
+                <p className="text-2xl font-bold tabular-nums">{formData.minNights}</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Calendar className="h-5 w-5 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Status</p>
+                <Badge 
+                  variant={statusConfig.variant}
+                  className={`font-medium ${statusConfig.className}`}
+                >
+                  {formData.status}
+                </Badge>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <Settings className="h-5 w-5 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-amber-600" />
-                  Offer Details
-                </CardTitle>
+            {/* Basic Information */}
+            <Card className="border-border">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1.5">
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <Gift className="h-5 w-5 text-muted-foreground" />
+                      Basic Information
+                    </CardTitle>
+                    <CardDescription className="text-sm leading-relaxed">
+                      Update offer title, description, and basic details
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-semibold text-slate-700">
-                    Offer Title *
-                  </Label>
+                  <Label className="text-sm font-medium">Offer Title</Label>
                   <Input
-                    id="title"
                     value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    onChange={(e) => updateFormData('title', e.target.value)}
                     placeholder="Summer Beach Getaway"
-                    className="h-12"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="slug" className="text-sm font-semibold text-slate-700">
-                      URL Slug *
-                    </Label>
+                    <Label className="text-sm font-medium">URL Slug</Label>
                     <Input
-                      id="slug"
                       value={formData.slug}
-                      onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                      onChange={(e) => updateFormData('slug', e.target.value)}
                       placeholder="summer-beach-getaway"
-                      className="h-12"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="subtitle" className="text-sm font-semibold text-slate-700">
-                      Subtitle
-                    </Label>
+                    <Label className="text-sm font-medium">Subtitle</Label>
                     <Input
-                      id="subtitle"
                       value={formData.subtitle}
-                      onChange={(e) => setFormData(prev => ({ ...prev, subtitle: e.target.value }))}
+                      onChange={(e) => updateFormData('subtitle', e.target.value)}
                       placeholder="Limited time offer"
-                      className="h-12"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="shortDesc" className="text-sm font-semibold text-slate-700">
-                    Short Description
-                  </Label>
+                  <Label className="text-sm font-medium">Short Description</Label>
                   <Textarea
-                    id="shortDesc"
                     value={formData.shortDesc}
-                    onChange={(e) => setFormData(prev => ({ ...prev, shortDesc: e.target.value }))}
+                    onChange={(e) => updateFormData('shortDesc', e.target.value)}
                     placeholder="Brief description for listings..."
-                    className="h-20"
+                    rows={3}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description" className="text-sm font-semibold text-slate-700">
-                    Full Description *
-                  </Label>
+                  <Label className="text-sm font-medium">Full Description</Label>
                   <Textarea
-                    id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) => updateFormData('description', e.target.value)}
                     placeholder="Detailed description of the offer..."
-                    className="min-h-32"
+                    rows={5}
                     required
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Pricing */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-amber-600" />
-                  Pricing & Validity
-                </CardTitle>
+            {/* Pricing & Validity */}
+            <Card className="border-border">
+              <CardHeader className="pb-4">
+                <div className="space-y-1.5">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    Pricing & Validity
+                  </CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Configure pricing, dates, and booking requirements
+                  </CardDescription>
+                </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="type" className="text-sm font-semibold text-slate-700">
-                      Offer Type *
-                    </Label>
-                    <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as OfferType }))}>
-                      <SelectTrigger className="h-12">
+                    <Label className="text-sm font-medium">Offer Type</Label>
+                    <Select value={formData.type} onValueChange={(value) => updateFormData('type', value)}>
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -256,16 +428,12 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="offerPrice" className="text-sm font-semibold text-slate-700">
-                      Offer Price *
-                    </Label>
+                    <Label className="text-sm font-medium">Offer Price (₱)</Label>
                     <Input
-                      id="offerPrice"
                       type="number"
                       value={formData.offerPrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, offerPrice: parseFloat(e.target.value) || 0 }))}
+                      onChange={(e) => updateFormData('offerPrice', parseFloat(e.target.value) || 0)}
                       placeholder="4000"
-                      className="h-12"
                       min="0"
                       step="0.01"
                       required
@@ -273,16 +441,12 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="originalPrice" className="text-sm font-semibold text-slate-700">
-                      Original Price
-                    </Label>
+                    <Label className="text-sm font-medium">Original Price (₱)</Label>
                     <Input
-                      id="originalPrice"
                       type="number"
                       value={formData.originalPrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || 0 }))}
+                      onChange={(e) => updateFormData('originalPrice', parseFloat(e.target.value) || 0)}
                       placeholder="5000"
-                      className="h-12"
                       min="0"
                       step="0.01"
                     />
@@ -291,29 +455,21 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="validFrom" className="text-sm font-semibold text-slate-700">
-                      Valid From *
-                    </Label>
+                    <Label className="text-sm font-medium">Valid From</Label>
                     <Input
-                      id="validFrom"
                       type="date"
                       value={formData.validFrom}
-                      onChange={(e) => setFormData(prev => ({ ...prev, validFrom: e.target.value }))}
-                      className="h-12"
+                      onChange={(e) => updateFormData('validFrom', e.target.value)}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="validTo" className="text-sm font-semibold text-slate-700">
-                      Valid To *
-                    </Label>
+                    <Label className="text-sm font-medium">Valid To</Label>
                     <Input
-                      id="validTo"
                       type="date"
                       value={formData.validTo}
-                      onChange={(e) => setFormData(prev => ({ ...prev, validTo: e.target.value }))}
-                      className="h-12"
+                      onChange={(e) => updateFormData('validTo', e.target.value)}
                       required
                     />
                   </div>
@@ -321,30 +477,22 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="minNights" className="text-sm font-semibold text-slate-700">
-                      Minimum Nights
-                    </Label>
+                    <Label className="text-sm font-medium">Minimum Nights</Label>
                     <Input
-                      id="minNights"
                       type="number"
                       value={formData.minNights}
-                      onChange={(e) => setFormData(prev => ({ ...prev, minNights: parseInt(e.target.value) || 1 }))}
+                      onChange={(e) => updateFormData('minNights', parseInt(e.target.value) || 1)}
                       placeholder="1"
-                      className="h-12"
                       min="1"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="promoCode" className="text-sm font-semibold text-slate-700">
-                      Promo Code
-                    </Label>
+                    <Label className="text-sm font-medium">Promo Code</Label>
                     <Input
-                      id="promoCode"
                       value={formData.promoCode}
-                      onChange={(e) => setFormData(prev => ({ ...prev, promoCode: e.target.value }))}
+                      onChange={(e) => updateFormData('promoCode', e.target.value)}
                       placeholder="SUMMER2024"
-                      className="h-12"
                     />
                   </div>
                 </div>
@@ -352,42 +500,49 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
             </Card>
 
             {/* Terms & Conditions */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle>Terms & Conditions</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="termsConditions" className="text-sm font-semibold text-slate-700">
+            <Card className="border-border">
+              <CardHeader className="pb-4">
+                <div className="space-y-1.5">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
                     Terms & Conditions
-                  </Label>
+                  </CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Define terms, conditions, and legal requirements
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Terms & Conditions</Label>
                   <Textarea
-                    id="termsConditions"
                     value={formData.termsConditions}
-                    onChange={(e) => setFormData(prev => ({ ...prev, termsConditions: e.target.value }))}
+                    onChange={(e) => updateFormData('termsConditions', e.target.value)}
                     placeholder="Detailed terms and conditions..."
-                    className="min-h-32"
+                    rows={6}
                   />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Settings Sidebar */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Status Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Settings className="h-5 w-5 text-amber-600" />
-                  Settings
-                </CardTitle>
+            {/* Settings */}
+            <Card className="border-border">
+              <CardHeader className="pb-4">
+                <div className="space-y-1.5">
+                  <CardTitle className="text-xl">Settings</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Configure visibility and status settings
+                  </CardDescription>
+                </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as OfferStatus }))}>
-                    <SelectTrigger className="h-12">
+                  <Label className="text-sm font-medium">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => updateFormData('status', value)}>
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -398,36 +553,39 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
                   </Select>
                 </div>
 
+                <Separator />
+
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Published</Label>
-                    <p className="text-xs text-slate-500">Visible on website</p>
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Published</Label>
+                    <p className="text-xs text-muted-foreground">Visible on website</p>
                   </div>
                   <Switch 
                     checked={formData.isPublished}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isPublished: checked }))}
+                    onCheckedChange={(checked) => updateFormData('isPublished', checked)}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Featured</Label>
-                    <p className="text-xs text-slate-500">Show on homepage</p>
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">Featured</Label>
+                    <p className="text-xs text-muted-foreground">Show on homepage</p>
                   </div>
                   <Switch 
                     checked={formData.isFeatured}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isFeatured: checked }))}
+                    onCheckedChange={(checked) => updateFormData('isFeatured', checked)}
                   />
                 </div>
 
+                <Separator />
+
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Sort Order</Label>
+                  <Label className="text-sm font-medium">Sort Order</Label>
                   <Input
                     type="number"
                     value={formData.sortOrder}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) => updateFormData('sortOrder', parseInt(e.target.value) || 0)}
                     placeholder="0"
-                    className="h-12"
                     min="0"
                   />
                 </div>
@@ -435,34 +593,64 @@ export default function EditOfferPage({ params }: EditOfferPageProps) {
             </Card>
 
             {/* Featured Image */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ImageIcon className="h-5 w-5 text-amber-600" />
-                  Featured Image
-                </CardTitle>
+            <Card className="border-border">
+              <CardHeader className="pb-4">
+                <div className="space-y-1.5">
+                  <CardTitle className="text-xl">Featured Image</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Upload or set image for the offer
+                  </CardDescription>
+                </div>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-slate-700">Image URL</Label>
-                    <Input
-                      value={formData.featuredImage}
-                      onChange={(e) => setFormData(prev => ({ ...prev, featuredImage: e.target.value }))}
-                      placeholder="https://example.com/offer-image.jpg"
-                      className="h-12"
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Image URL</Label>
+                  <Input
+                    value={formData.featuredImage}
+                    onChange={(e) => updateFormData('featuredImage', e.target.value)}
+                    placeholder="https://example.com/offer-image.jpg"
+                  />
+                </div>
+                
+                {formData.featuredImage && (
+                  <div className="aspect-video rounded-lg overflow-hidden border border-border">
+                    <img 
+                      src={formData.featuredImage} 
+                      alt="Offer preview"
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                  
-                  {formData.featuredImage && (
-                    <div className="aspect-video rounded-lg overflow-hidden border border-slate-200">
-                      <img 
-                        src={formData.featuredImage} 
-                        alt="Offer preview"
-                        className="w-full h-full object-cover"
-                      />
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Offer Summary */}
+            <Card className="border-border">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl">Offer Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Type</span>
+                      <span className="font-medium capitalize">{formData.type.replace('_', ' ').toLowerCase()}</span>
                     </div>
-                  )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Offer Price</span>
+                      <span className="font-medium">₱{formData.offerPrice.toLocaleString()}</span>
+                    </div>
+                    {formData.originalPrice > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Original Price</span>
+                        <span className="font-medium line-through text-muted-foreground">₱{formData.originalPrice.toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Min. Nights</span>
+                      <span className="font-medium">{formData.minNights}</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { 
   Save, 
   Building, 
@@ -17,7 +18,17 @@ import {
   Clock,
   Image as ImageIcon,
   AlertCircle,
-  DollarSign
+  DollarSign,
+  Settings,
+  Globe,
+  CheckCircle,
+  Loader2,
+  Upload,
+  Camera,
+  Eye,
+  EyeOff,
+  Star,
+  Activity
 } from "lucide-react"
 import { BusinessUnit, PropertyType } from "@prisma/client"
 import { z } from "zod"
@@ -183,27 +194,50 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
 
   const getError = (field: string) => errors[field]
 
+  const getPropertyTypeIcon = (type: PropertyType) => {
+    switch (type) {
+      case 'HOTEL': return Building
+      case 'RESORT': return Globe
+      case 'VILLA_COMPLEX': return Building
+      case 'BOUTIQUE_HOTEL': return Star
+      case 'APARTMENT_HOTEL': return Building
+      default: return Building
+    }
+  }
+
+  const getPropertyTypeColor = (type: PropertyType) => {
+    switch (type) {
+      case 'HOTEL': return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'RESORT': return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      case 'VILLA_COMPLEX': return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'BOUTIQUE_HOTEL': return 'bg-amber-50 text-amber-700 border-amber-200'
+      case 'APARTMENT_HOTEL': return 'bg-slate-50 text-slate-700 border-slate-200'
+      default: return 'bg-slate-50 text-slate-700 border-slate-200'
+    }
+  }
+
   return (
-    <>
+    <div className="space-y-8">
       {/* Success Alert */}
       {updateSuccess && (
-        <Alert className="mb-6 border-green-200 bg-green-50">
-          <AlertCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            Property updated successfully!
+        <Alert className="border-emerald-200 bg-emerald-50">
+          <CheckCircle className="h-4 w-4 text-emerald-600" />
+          <AlertDescription className="text-emerald-800 font-medium">
+            Property updated successfully! Changes are now live.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Error Summary */}
       {Object.keys(errors).length > 0 && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Please fix the following errors:
-            <ul className="mt-2 list-disc list-inside">
+            <div className="font-medium mb-2">Please fix the following errors:</div>
+            <ul className="space-y-1 text-sm">
               {Object.entries(errors).map(([field, error]) => (
-                <li key={field} className="text-sm">
+                <li key={field} className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-current rounded-full" />
                   {error}
                 </li>
               ))}
@@ -213,98 +247,135 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Details */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5 text-amber-600" />
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="xl:col-span-2 space-y-8">
+            {/* Basic Information */}
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-foreground">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                    <Building className="h-5 w-5 text-blue-600" />
+                  </div>
                   Basic Information
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Essential details about your property
+                </p>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="displayName" className="text-sm font-semibold text-slate-700">
-                      Display Name *
+                    <Label htmlFor="displayName" className="text-sm font-medium">
+                      Display Name
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Input
                       id="displayName"
                       value={formData.displayName}
                       onChange={(e) => setFormData(prev => ({ ...prev, displayName: e.target.value }))}
                       placeholder="Tropicana Grand Manila"
-                      className={`h-12 ${getError('displayName') ? 'border-red-500' : ''}`}
+                      className={getError('displayName') ? 'border-destructive' : ''}
                     />
                     {getError('displayName') && (
-                      <p className="text-sm text-red-600">{getError('displayName')}</p>
+                      <p className="text-sm text-destructive">{getError('displayName')}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
-                      Internal Name *
+                    <Label htmlFor="name" className="text-sm font-medium">
+                      Internal Name
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Tropicana Manila"
-                      className={`h-12 ${getError('name') ? 'border-red-500' : ''}`}
+                      className={getError('name') ? 'border-destructive' : ''}
                     />
                     {getError('name') && (
-                      <p className="text-sm text-red-600">{getError('name')}</p>
+                      <p className="text-sm text-destructive">{getError('name')}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="slug" className="text-sm font-semibold text-slate-700">
-                      URL Slug *
+                    <Label htmlFor="slug" className="text-sm font-medium">
+                      URL Slug
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-500">/properties/</span>
+                    <div className="flex">
+                      <div className="inline-flex items-center px-3 border border-r-0 border-input bg-muted rounded-l-md text-sm text-muted-foreground">
+                        /properties/
+                      </div>
                       <Input
                         id="slug"
                         value={formData.slug}
                         onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
                         placeholder="tropicana-manila"
-                        className={`flex-1 h-12 ${getError('slug') ? 'border-red-500' : ''}`}
+                        className={`rounded-l-none ${getError('slug') ? 'border-destructive' : ''}`}
                       />
                     </div>
                     {getError('slug') && (
-                      <p className="text-sm text-red-600">{getError('slug')}</p>
+                      <p className="text-sm text-destructive">{getError('slug')}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="propertyType" className="text-sm font-semibold text-slate-700">
-                      Property Type *
+                    <Label htmlFor="propertyType" className="text-sm font-medium">
+                      Property Type
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Select 
                       value={formData.propertyType} 
                       onValueChange={(value) => setFormData(prev => ({ ...prev, propertyType: value as PropertyType }))}
                     >
-                      <SelectTrigger className="h-12">
+                      <SelectTrigger className={getError('propertyType') ? 'border-destructive' : ''}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="HOTEL">Urban Hotel</SelectItem>
-                        <SelectItem value="RESORT">Beach Resort</SelectItem>
-                        <SelectItem value="VILLA_COMPLEX">Villa Complex</SelectItem>
-                        <SelectItem value="BOUTIQUE_HOTEL">Boutique Hotel</SelectItem>
-                        <SelectItem value="APARTMENT_HOTEL">Apartment Hotel</SelectItem>
+                        <SelectItem value="HOTEL">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            Urban Hotel
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="RESORT">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4" />
+                            Beach Resort
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="VILLA_COMPLEX">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            Villa Complex
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="BOUTIQUE_HOTEL">
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4" />
+                            Boutique Hotel
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="APARTMENT_HOTEL">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            Apartment Hotel
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     {getError('propertyType') && (
-                      <p className="text-sm text-red-600">{getError('propertyType')}</p>
+                      <p className="text-sm text-destructive">{getError('propertyType')}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="shortDescription" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="shortDescription" className="text-sm font-medium">
                     Short Description
                   </Label>
                   <Textarea
@@ -312,12 +383,15 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                     value={formData.shortDescription}
                     onChange={(e) => setFormData(prev => ({ ...prev, shortDescription: e.target.value }))}
                     placeholder="A brief, compelling description for listings..."
-                    className="h-20"
+                    className="min-h-[80px] resize-none"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Used in search results and property cards
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="longDescription" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="longDescription" className="text-sm font-medium">
                     Detailed Description
                   </Label>
                   <Textarea
@@ -325,53 +399,61 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                     value={formData.longDescription}
                     onChange={(e) => setFormData(prev => ({ ...prev, longDescription: e.target.value }))}
                     placeholder="Comprehensive description for the property page..."
-                    className="h-32"
+                    className="min-h-[120px] resize-none"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Detailed information shown on the property page
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Location Information */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-amber-600" />
+            {/* Location & Contact */}
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-foreground">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                    <MapPin className="h-5 w-5 text-emerald-600" />
+                  </div>
                   Location & Contact
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Address and contact information for your property
+                </p>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="address" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="address" className="text-sm font-medium">
                     Street Address
                   </Label>
                   <Input
                     id="address"
                     value={formData.address}
                     onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="123 Main Street"
-                    className="h-12"
+                    placeholder="123 Main Street, Barangay Centro"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="city" className="text-sm font-semibold text-slate-700">
-                      City *
+                    <Label htmlFor="city" className="text-sm font-medium">
+                      City
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Input
                       id="city"
                       value={formData.city}
                       onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
                       placeholder="Manila"
-                      className={`h-12 ${getError('city') ? 'border-red-500' : ''}`}
+                      className={getError('city') ? 'border-destructive' : ''}
                     />
                     {getError('city') && (
-                      <p className="text-sm text-red-600">{getError('city')}</p>
+                      <p className="text-sm text-destructive">{getError('city')}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="state" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="state" className="text-sm font-medium">
                       State/Province
                     </Label>
                     <Input
@@ -379,30 +461,30 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       value={formData.state}
                       onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
                       placeholder="Metro Manila"
-                      className="h-12"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="country" className="text-sm font-semibold text-slate-700">
-                      Country *
+                    <Label htmlFor="country" className="text-sm font-medium">
+                      Country
+                      <span className="text-destructive ml-1">*</span>
                     </Label>
                     <Input
                       id="country"
                       value={formData.country}
                       onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
                       placeholder="Philippines"
-                      className={`h-12 ${getError('country') ? 'border-red-500' : ''}`}
+                      className={getError('country') ? 'border-destructive' : ''}
                     />
                     {getError('country') && (
-                      <p className="text-sm text-red-600">{getError('country')}</p>
+                      <p className="text-sm text-destructive">{getError('country')}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="phone" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="phone" className="text-sm font-medium">
                       Phone Number
                     </Label>
                     <Input
@@ -410,12 +492,11 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       value={formData.phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="+63 2 8888 8888"
-                      className="h-12"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="email" className="text-sm font-medium">
                       Email Address
                     </Label>
                     <Input
@@ -424,15 +505,15 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="reservations@property.com"
-                      className={`h-12 ${getError('email') ? 'border-red-500' : ''}`}
+                      className={getError('email') ? 'border-destructive' : ''}
                     />
                     {getError('email') && (
-                      <p className="text-sm text-red-600">{getError('email')}</p>
+                      <p className="text-sm text-destructive">{getError('email')}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="website" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="website" className="text-sm font-medium">
                       Website URL
                     </Label>
                     <Input
@@ -441,10 +522,10 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       value={formData.website}
                       onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
                       placeholder="https://property.com"
-                      className={`h-12 ${getError('website') ? 'border-red-500' : ''}`}
+                      className={getError('website') ? 'border-destructive' : ''}
                     />
                     {getError('website') && (
-                      <p className="text-sm text-red-600">{getError('website')}</p>
+                      <p className="text-sm text-destructive">{getError('website')}</p>
                     )}
                   </div>
                 </div>
@@ -452,17 +533,22 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
             </Card>
 
             {/* Operational Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-amber-600" />
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-xl font-semibold text-foreground">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
                   Operational Settings
                 </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Check-in times, policies, and financial settings
+                </p>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="checkInTime" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="checkInTime" className="text-sm font-medium">
                       Check-in Time
                     </Label>
                     <Input
@@ -470,15 +556,15 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       type="time"
                       value={formData.checkInTime}
                       onChange={(e) => setFormData(prev => ({ ...prev, checkInTime: e.target.value }))}
-                      className={`h-12 ${getError('checkInTime') ? 'border-red-500' : ''}`}
+                      className={getError('checkInTime') ? 'border-destructive' : ''}
                     />
                     {getError('checkInTime') && (
-                      <p className="text-sm text-red-600">{getError('checkInTime')}</p>
+                      <p className="text-sm text-destructive">{getError('checkInTime')}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="checkOutTime" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="checkOutTime" className="text-sm font-medium">
                       Check-out Time
                     </Label>
                     <Input
@@ -486,15 +572,15 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       type="time"
                       value={formData.checkOutTime}
                       onChange={(e) => setFormData(prev => ({ ...prev, checkOutTime: e.target.value }))}
-                      className={`h-12 ${getError('checkOutTime') ? 'border-red-500' : ''}`}
+                      className={getError('checkOutTime') ? 'border-destructive' : ''}
                     />
                     {getError('checkOutTime') && (
-                      <p className="text-sm text-red-600">{getError('checkOutTime')}</p>
+                      <p className="text-sm text-destructive">{getError('checkOutTime')}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="cancellationHours" className="text-sm font-semibold text-slate-700">
+                    <Label htmlFor="cancellationHours" className="text-sm font-medium">
                       Cancellation Hours
                     </Label>
                     <Input
@@ -503,18 +589,19 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                       value={formData.cancellationHours}
                       onChange={(e) => setFormData(prev => ({ ...prev, cancellationHours: parseInt(e.target.value) || 0 }))}
                       placeholder="24"
-                      className="h-12"
                       min="0"
                       max="168"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Hours before arrival for free cancellation
+                    </p>
                   </div>
                 </div>
 
-                {/* Financial Settings with Percentage Display */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="taxRate" className="text-sm font-semibold text-slate-700">
-                      Tax Rate (%)
+                    <Label htmlFor="taxRate" className="text-sm font-medium">
+                      Tax Rate
                     </Label>
                     <div className="relative">
                       <Input
@@ -526,19 +613,23 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                         value={percentageValues.taxRate}
                         onChange={(e) => setPercentageValues(prev => ({ ...prev, taxRate: e.target.value }))}
                         placeholder="15.00"
-                        className={`h-12 pr-8 ${getError('taxRate') ? 'border-red-500' : ''}`}
+                        className={`pr-8 ${getError('taxRate') ? 'border-destructive' : ''}`}
                       />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</div>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        %
+                      </div>
                     </div>
                     {getError('taxRate') && (
-                      <p className="text-sm text-red-600">{getError('taxRate')}</p>
+                      <p className="text-sm text-destructive">{getError('taxRate')}</p>
                     )}
-                    <p className="text-xs text-slate-500">Enter as percentage (e.g., 15 for 15%)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Government tax percentage applied to bookings
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="serviceFeeRate" className="text-sm font-semibold text-slate-700">
-                      Service Fee Rate (%)
+                    <Label htmlFor="serviceFeeRate" className="text-sm font-medium">
+                      Service Fee Rate
                     </Label>
                     <div className="relative">
                       <Input
@@ -550,32 +641,53 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                         value={percentageValues.serviceFeeRate}
                         onChange={(e) => setPercentageValues(prev => ({ ...prev, serviceFeeRate: e.target.value }))}
                         placeholder="10.00"
-                        className={`h-12 pr-8 ${getError('serviceFeeRate') ? 'border-red-500' : ''}`}
+                        className={`pr-8 ${getError('serviceFeeRate') ? 'border-destructive' : ''}`}
                       />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</div>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        %
+                      </div>
                     </div>
                     {getError('serviceFeeRate') && (
-                      <p className="text-sm text-red-600">{getError('serviceFeeRate')}</p>
+                      <p className="text-sm text-destructive">{getError('serviceFeeRate')}</p>
                     )}
-                    <p className="text-xs text-slate-500">Enter as percentage (e.g., 10 for 10%)</p>
+                    <p className="text-xs text-muted-foreground">
+                      Additional service fee percentage
+                    </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Settings Sidebar */}
+          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Publishing Status */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-lg">Publishing</CardTitle>
+            {/* Status Overview */}
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100">
+                    <Activity className="h-4 w-4 text-violet-600" />
+                  </div>
+                  Property Status
+                </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Active</Label>
-                    <p className="text-xs text-slate-500">Property is operational</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Active</Label>
+                      {formData.isActive ? (
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <Activity className="w-3 h-3 mr-1" />
+                          Live
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200">
+                          Inactive
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Property is operational</p>
                   </div>
                   <Switch 
                     checked={formData.isActive}
@@ -584,9 +696,22 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Published</Label>
-                    <p className="text-xs text-slate-500">Visible on website</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Published</Label>
+                      {formData.isPublished ? (
+                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
+                          <Eye className="w-3 h-3 mr-1" />
+                          Public
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-slate-50 text-slate-700 border-slate-200">
+                          <EyeOff className="w-3 h-3 mr-1" />
+                          Private
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Visible on website</p>
                   </div>
                   <Switch 
                     checked={formData.isPublished}
@@ -595,9 +720,17 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Featured</Label>
-                    <p className="text-xs text-slate-500">Show on homepage</p>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Featured</Label>
+                      {formData.isFeatured && (
+                        <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+                          <Star className="w-3 h-3 mr-1" />
+                          Featured
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">Show on homepage</p>
                   </div>
                   <Switch 
                     checked={formData.isFeatured}
@@ -608,125 +741,148 @@ export function PropertyDetailsForm({ property }: PropertyDetailsFormProps) {
             </Card>
 
             {/* Branding */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Palette className="h-5 w-5 text-amber-600" />
-                  Branding
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-100">
+                    <Palette className="h-4 w-4 text-pink-600" />
+                  </div>
+                  Brand Colors
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Primary Color</Label>
+                  <Label className="text-sm font-medium">Primary Color</Label>
                   <div className="flex items-center gap-3">
                     <Input
                       type="color"
                       value={formData.primaryColor}
                       onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                      className="w-16 h-12 p-1 border-2"
+                      className="w-12 h-12 p-1 rounded-lg border-2 cursor-pointer"
                     />
                     <Input
                       value={formData.primaryColor}
                       onChange={(e) => setFormData(prev => ({ ...prev, primaryColor: e.target.value }))}
                       placeholder="#f59e0b"
-                      className={`flex-1 h-12 ${getError('primaryColor') ? 'border-red-500' : ''}`}
+                      className={`flex-1 ${getError('primaryColor') ? 'border-destructive' : ''}`}
                     />
                   </div>
                   {getError('primaryColor') && (
-                    <p className="text-sm text-red-600">{getError('primaryColor')}</p>
+                    <p className="text-sm text-destructive">{getError('primaryColor')}</p>
                   )}
+                  <p className="text-xs text-muted-foreground">
+                    Main brand color for buttons and highlights
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Secondary Color</Label>
+                  <Label className="text-sm font-medium">Secondary Color</Label>
                   <div className="flex items-center gap-3">
                     <Input
                       type="color"
                       value={formData.secondaryColor}
                       onChange={(e) => setFormData(prev => ({ ...prev, secondaryColor: e.target.value }))}
-                      className="w-16 h-12 p-1 border-2"
+                      className="w-12 h-12 p-1 rounded-lg border-2 cursor-pointer"
                     />
                     <Input
                       value={formData.secondaryColor}
                       onChange={(e) => setFormData(prev => ({ ...prev, secondaryColor: e.target.value }))}
                       placeholder="#f97316"
-                      className={`flex-1 h-12 ${getError('secondaryColor') ? 'border-red-500' : ''}`}
+                      className={`flex-1 ${getError('secondaryColor') ? 'border-destructive' : ''}`}
                     />
                   </div>
                   {getError('secondaryColor') && (
-                    <p className="text-sm text-red-600">{getError('secondaryColor')}</p>
+                    <p className="text-sm text-destructive">{getError('secondaryColor')}</p>
                   )}
+                  <p className="text-xs text-muted-foreground">
+                    Accent color for gradients and decorative elements
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Featured Image */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ImageIcon className="h-5 w-5 text-amber-600" />
+            {/* Hero Image */}
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader className="space-y-2">
+                <CardTitle className="flex items-center gap-3 text-lg font-semibold text-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100">
+                    <ImageIcon className="h-4 w-4 text-indigo-600" />
+                  </div>
                   Hero Image
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-slate-700">Image URL</Label>
-                    <Input
-                      value={formData.heroImage}
-                      onChange={(e) => setFormData(prev => ({ ...prev, heroImage: e.target.value }))}
-                      placeholder="https://example.com/hero-image.jpg"
-                      className="h-12"
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Image URL</Label>
+                  <Input
+                    value={formData.heroImage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, heroImage: e.target.value }))}
+                    placeholder="https://example.com/hero-image.jpg"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Main image displayed on property pages
+                  </p>
+                </div>
+                
+                {formData.heroImage ? (
+                  <div className="relative aspect-video rounded-lg overflow-hidden border">
+                    <img 
+                      src={formData.heroImage} 
+                      alt={property.displayName}
+                      className="w-full h-full object-cover"
                     />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
+                        <Camera className="w-4 h-4 mr-2" />
+                        Change Image
+                      </Button>
+                    </div>
                   </div>
-                  
-                  {formData.heroImage && (
-                    <div className="relative aspect-video rounded-lg overflow-hidden">
-                      <img 
-                        src={formData.heroImage} 
-                        alt={property.displayName}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <Button size="sm" variant="outline" className="bg-white/90">
-                          Change Image
-                        </Button>
+                ) : (
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer group">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted group-hover:bg-muted/80 transition-colors">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div className="space-y-1 text-center">
+                        <p className="text-sm font-medium text-foreground">Upload hero image</p>
+                        <p className="text-xs text-muted-foreground">Recommended: 1920×1080px</p>
                       </div>
                     </div>
-                  )}
-                  
-                  {!formData.heroImage && (
-                    <div className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center hover:border-amber-300 transition-colors cursor-pointer">
-                      <ImageIcon className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                      <p className="text-sm text-slate-600 mb-2">Upload hero image</p>
-                      <p className="text-xs text-slate-500">Recommended: 1920x1080px</p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Save Button */}
-            <Button 
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 h-12"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Saving...
-                </div>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
+            <Card className="transition-all hover:shadow-md border-primary/20">
+              <CardContent className="p-6">
+                <Button 
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12"
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving Changes...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Save className="h-4 w-4" />
+                      Save Changes
+                    </div>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  Changes will be applied immediately
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </form>
-    </>
+    </div>
   )
 }

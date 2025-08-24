@@ -30,7 +30,9 @@ import {
   AlertCircle,
   Filter,
   Download,
-  LoaderIcon
+  Users,
+  DollarSign,
+  Building2
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
@@ -54,25 +56,37 @@ export default async function ReservationsManagement() {
     take: 50
   })
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'CONFIRMED': return 'bg-green-100 text-green-800'
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800'
-      case 'CHECKED_IN': return 'bg-blue-100 text-blue-800'
-      case 'CHECKED_OUT': return 'bg-slate-100 text-slate-800'
-      case 'CANCELLED': return 'bg-red-100 text-red-800'
-      case 'NO_SHOW': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'CONFIRMED': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'PENDING': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      case 'CHECKED_IN': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      case 'CHECKED_OUT': 
+        return { variant: "outline" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
+      case 'CANCELLED': 
+        return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+      case 'NO_SHOW': 
+        return { variant: "secondary" as const, className: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
     }
   }
 
-  const getPaymentStatusColor = (status: string) => {
+  const getPaymentStatusVariant = (status: string) => {
     switch (status) {
-      case 'PAID': return 'bg-green-100 text-green-800'
-      case 'PARTIAL': return 'bg-yellow-100 text-yellow-800'
-      case 'PENDING': return 'bg-orange-100 text-orange-800'
-      case 'FAILED': return 'bg-red-100 text-red-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'PAID': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'PARTIAL': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      case 'PENDING': 
+        return { variant: "outline" as const, className: "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-50" }
+      case 'FAILED': 
+        return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
     }
   }
 
@@ -84,9 +98,12 @@ export default async function ReservationsManagement() {
       case 'CHECKED_OUT': return CheckCircle
       case 'CANCELLED': return XCircle
       case 'NO_SHOW': return AlertCircle
-      case 'PENDING': return LoaderIcon
       default: return Clock
     }
+  }
+
+  const formatStatusText = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   const reservationsByStatus = {
@@ -99,80 +116,85 @@ export default async function ReservationsManagement() {
   const totalRevenue = reservations.reduce((sum, r) => sum + Number(r.totalAmount), 0)
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Reservations</h1>
-          <p className="text-slate-600 mt-1">Manage all guest bookings and stays</p>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Reservations</h1>
+          </div>
+          <p className="max-w-2xl text-sm text-muted-foreground leading-relaxed">
+            Manage all guest bookings and stays across your properties
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+          <Button size="sm" asChild>
             <Link href="/admin/reservations/new">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               New Reservation
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Reservations</p>
+                <p className="text-2xl font-bold tabular-nums">{reservationsByStatus.total}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{reservationsByStatus.total}</p>
-                <p className="text-sm text-slate-600">Total Reservations</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Calendar className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Confirmed</p>
+                <p className="text-2xl font-bold tabular-nums">{reservationsByStatus.confirmed}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{reservationsByStatus.confirmed}</p>
-                <p className="text-sm text-slate-600">Confirmed</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+                <CheckCircle className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <User className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Checked In</p>
+                <p className="text-2xl font-bold tabular-nums">{reservationsByStatus.checkedIn}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{reservationsByStatus.checkedIn}</p>
-                <p className="text-sm text-slate-600">Checked In</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <User className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-amber-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <p className="text-2xl font-bold tabular-nums">₱{totalRevenue.toLocaleString()}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">₱{totalRevenue.toLocaleString()}</p>
-                <p className="text-sm text-slate-600">Total Revenue</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <DollarSign className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -180,20 +202,25 @@ export default async function ReservationsManagement() {
       </div>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
+      <Card className="border-border">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Reservations</CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="space-y-1.5">
+              <CardTitle className="text-xl">All Reservations</CardTitle>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Complete overview of guest bookings and reservation status
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search reservations..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-80"
                 />
               </div>
               <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="mr-2 h-4 w-4" />
                 Filter
               </Button>
             </div>
@@ -203,77 +230,82 @@ export default async function ReservationsManagement() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">Guest</TableHead>
-                <TableHead className="font-semibold text-slate-700">Property</TableHead>
-                <TableHead className="font-semibold text-slate-700">Confirmation</TableHead>
-                <TableHead className="font-semibold text-slate-700">Dates</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Payment</TableHead>
-                <TableHead className="font-semibold text-slate-700">Total</TableHead>
+              <TableRow>
+                <TableHead className="font-medium">Guest</TableHead>
+                <TableHead className="font-medium">Property</TableHead>
+                <TableHead className="font-medium">Confirmation</TableHead>
+                <TableHead className="font-medium">Dates</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Payment</TableHead>
+                <TableHead className="font-medium">Total</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reservations.map((reservation) => {
                 const StatusIcon = getStatusIcon(reservation.status)
+                const statusConfig = getStatusVariant(reservation.status)
+                const paymentConfig = getPaymentStatusVariant(reservation.paymentStatus)
                 
                 return (
-                  <TableRow key={reservation.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
+                  <TableRow key={reservation.id} className="hover:bg-muted/50">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                          <User className="h-5 w-5 text-blue-600" />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                          <User className="h-4 w-4 text-muted-foreground" />
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">
                             {reservation.guest.firstName} {reservation.guest.lastName}
                           </p>
-                          <p className="text-sm text-slate-500">{reservation.guest.email}</p>
+                          <p className="text-xs text-muted-foreground">{reservation.guest.email}</p>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium text-slate-900">{reservation.businessUnit.displayName}</p>
-                        <p className="text-sm text-slate-500">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{reservation.businessUnit.displayName}</p>
+                        <p className="text-xs text-muted-foreground">
                           {reservation.rooms.map(r => r.roomType?.displayName).join(', ')}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-mono text-sm text-slate-700">
+                      <div className="font-mono text-xs text-muted-foreground">
                         {reservation.confirmationNumber}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <div className="font-medium text-slate-900">
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium">
                           {new Date(reservation.checkInDate).toLocaleDateString()}
                         </div>
-                        <div className="text-slate-500">
+                        <div className="text-xs text-muted-foreground">
                           to {new Date(reservation.checkOutDate).toLocaleDateString()}
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-muted-foreground">
                           {reservation.nights} night{reservation.nights > 1 ? 's' : ''}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <StatusIcon className="h-4 w-4 text-slate-400" />
-                        <Badge className={`${getStatusColor(reservation.status)} border-0`}>
-                          {reservation.status.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`${getPaymentStatusColor(reservation.paymentStatus)} border-0`}>
-                        {reservation.paymentStatus}
+                      <Badge 
+                        variant={statusConfig.variant}
+                        className={`font-medium ${statusConfig.className}`}
+                      >
+                        {formatStatusText(reservation.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="font-semibold text-slate-900">
+                      <Badge 
+                        variant={paymentConfig.variant}
+                        className={`font-medium ${paymentConfig.className}`}
+                      >
+                        {formatStatusText(reservation.paymentStatus)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm font-medium tabular-nums">
                         ₱{Number(reservation.totalAmount).toLocaleString()}
                       </div>
                     </TableCell>

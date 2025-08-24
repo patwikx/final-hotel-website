@@ -151,51 +151,55 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
 
   if (!blogPost) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
+      <div className="flex-1 space-y-8 p-8 pt-6">
+        <div className="flex items-center justify-center min-h-96">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading blog post...</p>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/cms/blog">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Blog
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Edit Blog Post</h1>
-            <p className="text-slate-600 mt-1">Update your blog content</p>
-          </div>
-        </div>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      {/* Back Navigation */}
+      <div className="flex items-center space-x-2">
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+          <Link href="/admin/cms/blog">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Blogs
+          </Link>
+        </Button>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-sm font-medium text-foreground">{blogPost.title}</span>
+      </div>
         
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-700">
-            <Trash2 className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
-          <Button variant="outline">
-            <Eye className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm">
+            <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
           <Button 
             onClick={handleSubmit}
             disabled={isLoading}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+            size="sm"
           >
             {isLoading ? (
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 Saving...
               </div>
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="mr-2 h-4 w-4" />
                 Save Changes
               </>
             )}
@@ -207,16 +211,16 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
+            <Card className="border-border">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
-                  <PenTool className="h-5 w-5 text-amber-600" />
+                  <PenTool className="h-5 w-5 text-primary" />
                   Post Content
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="title" className="text-sm font-medium">
                     Post Title *
                   </Label>
                   <Input
@@ -230,11 +234,11 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="slug" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="slug" className="text-sm font-medium">
                     URL Slug *
                   </Label>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-500">yoursite.com/blog/</span>
+                    <span className="text-sm text-muted-foreground">yoursite.com/blog/</span>
                     <Input
                       id="slug"
                       value={formData.slug}
@@ -247,7 +251,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="excerpt" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="excerpt" className="text-sm font-medium">
                     Post Excerpt
                   </Label>
                   <Textarea
@@ -260,7 +264,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="content" className="text-sm font-semibold text-slate-700">
+                  <Label htmlFor="content" className="text-sm font-medium">
                     Post Content *
                   </Label>
                   <Textarea
@@ -279,16 +283,16 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
           {/* Settings Sidebar */}
           <div className="space-y-6">
             {/* Publishing Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
+            <Card className="border-border">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Settings className="h-5 w-5 text-amber-600" />
+                  <Settings className="h-5 w-5 text-primary" />
                   Publishing
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Status</Label>
+                  <Label className="text-sm font-medium">Status</Label>
                   <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as PublishStatus }))}>
                     <SelectTrigger>
                       <SelectValue />
@@ -302,7 +306,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Reading Time</Label>
+                  <Label className="text-sm font-medium">Reading Time</Label>
                   <div className="flex items-center gap-2">
                     <Input
                       type="number"
@@ -311,23 +315,23 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                       className="w-20"
                       min="1"
                     />
-                    <span className="text-sm text-slate-600">minutes</span>
+                    <span className="text-sm text-muted-foreground">minutes</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             {/* Categories & Tags */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
+            <Card className="border-border">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Tag className="h-5 w-5 text-amber-600" />
+                  <Tag className="h-5 w-5 text-primary" />
                   Categories & Tags
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Categories</Label>
+                  <Label className="text-sm font-medium">Categories</Label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {formData.categories.map((category) => (
                       <Badge key={category} variant="outline" className="flex items-center gap-1">
@@ -335,7 +339,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                         <button
                           type="button"
                           onClick={() => removeCategory(category)}
-                          className="ml-1 hover:text-red-600"
+                          className="ml-1 hover:text-destructive"
                         >
                           ×
                         </button>
@@ -345,7 +349,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Tags</Label>
+                  <Label className="text-sm font-medium">Tags</Label>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {formData.tags.map((tag) => (
                       <Badge key={tag} variant="outline" className="flex items-center gap-1">
@@ -353,7 +357,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                         <button
                           type="button"
                           onClick={() => removeTag(tag)}
-                          className="ml-1 hover:text-red-600"
+                          className="ml-1 hover:text-destructive"
                         >
                           ×
                         </button>
@@ -365,16 +369,16 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
             </Card>
 
             {/* SEO Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
+            <Card className="border-border">
+              <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Globe className="h-5 w-5 text-amber-600" />
+                  <Globe className="h-5 w-5 text-primary" />
                   SEO Settings
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Meta Title</Label>
+                  <Label className="text-sm font-medium">Meta Title</Label>
                   <Input
                     value={formData.metaTitle || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, metaTitle: e.target.value }))}
@@ -383,7 +387,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Meta Description</Label>
+                  <Label className="text-sm font-medium">Meta Description</Label>
                   <Textarea
                     value={formData.metaDescription || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, metaDescription: e.target.value }))}
@@ -393,7 +397,7 @@ export default function EditBlogPostPage({ params }: EditBlogPostPageProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Keywords</Label>
+                  <Label className="text-sm font-medium">Keywords</Label>
                   <Input
                     value={formData.metaKeywords || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, metaKeywords: e.target.value }))}

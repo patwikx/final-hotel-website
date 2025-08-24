@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, User, ArrowRight, Clock } from "lucide-react"
@@ -13,29 +13,41 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ reservations }: RecentActivityProps) {
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'CONFIRMED': return 'bg-green-100 text-green-800'
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800'
-      case 'CHECKED_IN': return 'bg-blue-100 text-blue-800'
-      case 'CHECKED_OUT': return 'bg-slate-100 text-slate-800'
-      case 'CANCELLED': return 'bg-red-100 text-red-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'CONFIRMED': 
+        return { variant: "secondary" as const, className: "bg-green-100 text-green-800 hover:bg-green-100" }
+      case 'PENDING': 
+        return { variant: "outline" as const, className: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" }
+      case 'CHECKED_IN': 
+        return { variant: "default" as const, className: "bg-blue-100 text-blue-800 hover:bg-blue-100" }
+      case 'CHECKED_OUT': 
+        return { variant: "secondary" as const, className: "" }
+      case 'CANCELLED': 
+        return { variant: "destructive" as const, className: "bg-red-100 text-red-800 hover:bg-red-100" }
+      default: 
+        return { variant: "secondary" as const, className: "" }
     }
   }
 
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl font-bold text-slate-900 font-serif">Recent Activity</CardTitle>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Recent Activity</h3>
+          <p className="text-sm text-muted-foreground">
+            Latest reservations and updates
+          </p>
+        </div>
         <Button variant="outline" size="sm" asChild>
           <Link href="/admin/reservations">
             View All
-            <ArrowRight className="h-4 w-4 ml-2" />
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </div>
+
+      <div className="space-y-3">
         {reservations.map((reservation, index) => (
           <motion.div
             key={reservation.id}
@@ -44,21 +56,24 @@ export function RecentActivity({ reservations }: RecentActivityProps) {
             transition={{ delay: index * 0.1 }}
             className="group"
           >
-            <div className="flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-amber-600" />
+            <div className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                <Calendar className="h-4 w-4" />
               </div>
               
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-semibold text-slate-900 truncate">
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium leading-none">
                     {reservation.guest.firstName} {reservation.guest.lastName}
                   </p>
-                  <Badge className={`${getStatusColor(reservation.status)} border-0 text-xs`}>
+                  <Badge 
+                    variant={getStatusVariant(reservation.status).variant}
+                    className={`text-xs ${getStatusVariant(reservation.status).className}`}
+                  >
                     {reservation.status.replace('_', ' ')}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-slate-600">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <User className="h-3 w-3" />
                     <span>{reservation.confirmationNumber}</span>
@@ -71,20 +86,20 @@ export function RecentActivity({ reservations }: RecentActivityProps) {
               </div>
               
               <div className="text-right">
-                <p className="font-bold text-slate-900">₱{Number(reservation.totalAmount).toLocaleString()}</p>
-                <p className="text-xs text-slate-500">{reservation.nights} nights</p>
+                <p className="text-sm font-medium">₱{Number(reservation.totalAmount).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">{reservation.nights} nights</p>
               </div>
             </div>
           </motion.div>
         ))}
         
         {reservations.length === 0 && (
-          <div className="text-center py-8 text-slate-500">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-            <p>No recent reservations</p>
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-8 text-center">
+            <Calendar className="mb-4 h-8 w-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">No recent reservations</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

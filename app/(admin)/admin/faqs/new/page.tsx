@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,18 +8,22 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { 
   Save, 
   ArrowLeft, 
   HelpCircle, 
   Settings,
-  Eye
+  Eye,
+  Info,
+  CheckCircle2
 } from "lucide-react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 export default function NewFAQPage() {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
   const [formData, setFormData] = useState({
     question: "",
     answer: "",
@@ -43,41 +46,47 @@ export default function NewFAQPage() {
     }
   }
 
+  const isFormValid = formData.question.trim() && formData.answer.trim()
+
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-6 p-6 md:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/faqs">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex flex-col space-y-4 md:flex-row md:items-start md:justify-between md:space-y-0">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to FAQs
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 font-serif">Add New FAQ</h1>
-            <p className="text-slate-600 mt-1">Create a new frequently asked question</p>
+            </Button>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-sm font-medium text-foreground">Add New FAQ</span>
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Add New FAQ</h1>
+            <p className="text-sm text-muted-foreground">
+              Create a new frequently asked question
+            </p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button variant="outline">
-            <Eye className="h-4 w-4 mr-2" />
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm">
+            <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={isLoading}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+            disabled={isLoading || !isFormValid}
+            size="sm"
           >
             {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground" />
                 Creating...
-              </div>
+              </>
             ) : (
               <>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="mr-2 h-4 w-4" />
                 Create FAQ
               </>
             )}
@@ -85,52 +94,61 @@ export default function NewFAQPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div>
+        <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5 text-amber-600" />
-                  FAQ Content
-                </CardTitle>
+            {/* FAQ Content */}
+            <Card>
+              <CardHeader>
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" />
+                    FAQ Content
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Question and answer details
+                  </p>
+                </div>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="question" className="text-sm font-semibold text-slate-700">
-                    Question *
+                  <Label htmlFor="question">
+                    Question <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="question"
                     value={formData.question}
                     onChange={(e) => setFormData(prev => ({ ...prev, question: e.target.value }))}
                     placeholder="What are your check-in and check-out times?"
-                    className="h-12"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Clear and concise question that guests commonly ask
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="answer" className="text-sm font-semibold text-slate-700">
-                    Answer *
+                  <Label htmlFor="answer">
+                    Answer <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     id="answer"
                     value={formData.answer}
                     onChange={(e) => setFormData(prev => ({ ...prev, answer: e.target.value }))}
                     placeholder="Provide a detailed answer to the question..."
-                    className="min-h-32"
+                    className="min-h-[120px]"
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Comprehensive answer that addresses the question completely
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-semibold text-slate-700">
-                    Category
-                  </Label>
+                  <Label htmlFor="category">Category</Label>
                   <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
-                    <SelectTrigger className="h-12">
+                    <SelectTrigger id="category">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -141,6 +159,45 @@ export default function NewFAQPage() {
                       <SelectItem value="Services">Services</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Group related questions together for better organization
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* FAQ Preview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Preview</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border p-4 space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <HelpCircle className="h-4 w-4 text-primary" />
+                          {formData.category && (
+                            <Badge variant="secondary" className="text-xs">
+                              {formData.category}
+                            </Badge>
+                          )}
+                          {!formData.isActive && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              Hidden
+                            </Badge>
+                          )}
+                        </div>
+                        <h3 className="font-medium text-sm mb-2">
+                          {formData.question || "Your question will appear here..."}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {formData.answer || "Your answer will appear here..."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -148,19 +205,21 @@ export default function NewFAQPage() {
 
           {/* Settings Sidebar */}
           <div className="space-y-6">
-            {/* Publishing Settings */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Settings className="h-5 w-5 text-amber-600" />
+            {/* Display Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Settings className="h-4 w-4" />
                   Settings
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-semibold text-slate-700">Active</Label>
-                    <p className="text-xs text-slate-500">Visible to users</p>
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Active</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Visible to users
+                    </p>
                   </div>
                   <Switch 
                     checked={formData.isActive}
@@ -169,22 +228,68 @@ export default function NewFAQPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700">Sort Order</Label>
+                  <Label htmlFor="sortOrder">Sort Order</Label>
                   <Input
+                    id="sortOrder"
                     type="number"
                     value={formData.sortOrder}
                     onChange={(e) => setFormData(prev => ({ ...prev, sortOrder: parseInt(e.target.value) || 0 }))}
                     placeholder="0"
-                    className="h-12"
                     min="0"
                   />
-                  <p className="text-xs text-slate-500">Lower numbers appear first</p>
+                  <p className="text-xs text-muted-foreground">
+                    Lower numbers appear first (0 = highest priority)
+                  </p>
                 </div>
               </CardContent>
             </Card>
+
+            {/* FAQ Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">FAQ Status</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div className="flex items-start space-x-2">
+                  <Info className="h-4 w-4 mt-0.5 text-blue-600" />
+                  <div>
+                    <span className="font-medium">Status:</span>
+                    <p className="text-muted-foreground">
+                      Ready to create
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600" />
+                  <div>
+                    <span className="font-medium">Visibility:</span>
+                    <p className="text-muted-foreground">
+                      {formData.isActive ? 'Will be published' : 'Will be hidden'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <HelpCircle className="h-4 w-4 mt-0.5 text-amber-600" />
+                  <div>
+                    <span className="font-medium">Category:</span>
+                    <p className="text-muted-foreground">
+                      {formData.category || 'No category selected'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Info */}
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                This FAQ will be immediately available to users once created. Make sure all information is accurate and helpful.
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   )
 }

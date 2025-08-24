@@ -29,6 +29,9 @@ import {
   AlertCircle,
   Clock,
   Wrench,
+  Bed,
+  Users,
+  Home
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
@@ -55,34 +58,48 @@ export default async function RoomsManagement() {
     })
   ])
 
-  const getRoomStatusColor = (status: string) => {
+  const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'AVAILABLE': return 'bg-green-100 text-green-800'
-      case 'OCCUPIED': return 'bg-blue-100 text-blue-800'
-      case 'OUT_OF_ORDER': return 'bg-red-100 text-red-800'
-      case 'MAINTENANCE': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'AVAILABLE': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'OCCUPIED': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      case 'OUT_OF_ORDER': 
+        return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+      case 'MAINTENANCE': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
     }
   }
 
-  const getHousekeepingColor = (status: string) => {
+  const getHousekeepingVariant = (status: string) => {
     switch (status) {
-      case 'CLEAN': return 'bg-green-100 text-green-800'
-      case 'DIRTY': return 'bg-red-100 text-red-800'
-      case 'INSPECTED': return 'bg-blue-100 text-blue-800'
-      case 'OUT_OF_ORDER': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'CLEAN': 
+        return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+      case 'DIRTY': 
+        return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+      case 'INSPECTED': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      case 'OUT_OF_ORDER': 
+        return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
+      default: 
+        return { variant: "secondary" as const, className: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-50" }
     }
   }
 
   const getRoomStatusIcon = (status: string) => {
     switch (status) {
       case 'AVAILABLE': return CheckCircle
-      case 'OCCUPIED': return Building
+      case 'OCCUPIED': return Users
       case 'OUT_OF_ORDER': return AlertCircle
       case 'MAINTENANCE': return Wrench
       default: return Clock
     }
+  }
+
+  const formatStatusText = (status: string) => {
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   const roomsByStatus = {
@@ -93,186 +110,210 @@ export default async function RoomsManagement() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Rooms</h1>
-          <p className="text-slate-600 mt-1">Manage room inventory across all properties</p>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight">Room Management</h1>
+          <p className="text-muted-foreground">
+            Manage room inventory across all properties
+          </p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+        
+        <Button size="sm" asChild>
           <Link href="/admin/rooms/new">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Room
           </Link>
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Available</p>
+                <p className="text-2xl font-bold tabular-nums">{roomsByStatus.available}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.available}</p>
-                <p className="text-sm text-slate-600">Available</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+                <CheckCircle className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Building className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Occupied</p>
+                <p className="text-2xl font-bold tabular-nums">{roomsByStatus.occupied}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.occupied}</p>
-                <p className="text-sm text-slate-600">Occupied</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Users className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                <Wrench className="h-6 w-6 text-yellow-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
+                <p className="text-2xl font-bold tabular-nums">{roomsByStatus.maintenance}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.maintenance}</p>
-                <p className="text-sm text-slate-600">Maintenance</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <Wrench className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-red-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Out of Order</p>
+                <p className="text-2xl font-bold tabular-nums">{roomsByStatus.outOfOrder}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{roomsByStatus.outOfOrder}</p>
-                <p className="text-sm text-slate-600">Out of Order</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50">
+                <AlertCircle className="h-5 w-5 text-red-600" />
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card className="border-0 shadow-md">
+      {/* Filters Card */}
+      <Card className="border-border">
         <CardContent className="p-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input 
-                placeholder="Search rooms..." 
-                className="pl-10 bg-slate-50 border-slate-200 focus:bg-white"
+                placeholder="Search rooms, properties, or room types..." 
+                className="pl-10"
               />
             </div>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Properties</SelectItem>
-                {properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.displayName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="AVAILABLE">Available</SelectItem>
-                <SelectItem value="OCCUPIED">Occupied</SelectItem>
-                <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
-                <SelectItem value="OUT_OF_ORDER">Out of Order</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Select defaultValue="all">
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All Properties" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Properties</SelectItem>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select defaultValue="all">
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="AVAILABLE">Available</SelectItem>
+                  <SelectItem value="OCCUPIED">Occupied</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                  <SelectItem value="OUT_OF_ORDER">Out of Order</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-xl font-bold text-slate-900">All Rooms</CardTitle>
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Bed className="h-5 w-5 text-muted-foreground" />
+            All Rooms
+          </CardTitle>
         </CardHeader>
         
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">Room</TableHead>
-                <TableHead className="font-semibold text-slate-700">Property</TableHead>
-                <TableHead className="font-semibold text-slate-700">Type</TableHead>
-                <TableHead className="font-semibold text-slate-700">Floor</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Housekeeping</TableHead>
-                <TableHead className="font-semibold text-slate-700">Last Cleaned</TableHead>
+              <TableRow>
+                <TableHead className="font-medium">Room</TableHead>
+                <TableHead className="font-medium">Property</TableHead>
+                <TableHead className="font-medium">Type</TableHead>
+                <TableHead className="font-medium">Floor</TableHead>
+                <TableHead className="font-medium">Status</TableHead>
+                <TableHead className="font-medium">Housekeeping</TableHead>
+                <TableHead className="font-medium">Last Cleaned</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rooms.map((room) => {
                 const StatusIcon = getRoomStatusIcon(room.status)
+                const statusConfig = getStatusVariant(room.status)
+                const housekeepingConfig = getHousekeepingVariant(room.housekeeping)
                 
                 return (
-                  <TableRow key={room.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
+                  <TableRow key={room.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center">
-                          <span className="font-bold text-slate-700">{room.roomNumber}</span>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                          <span className="font-medium text-sm">{room.roomNumber}</span>
                         </div>
-                        <div>
-                          <p className="font-semibold text-slate-900">Room {room.roomNumber}</p>
+                        <div className="space-y-1">
+                          <div className="font-medium">Room {room.roomNumber}</div>
                           {room.wing && (
-                            <p className="text-sm text-slate-500">Wing {room.wing}</p>
+                            <div className="text-sm text-muted-foreground">Wing {room.wing}</div>
                           )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-slate-700">{room.businessUnit.displayName}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-slate-900">{room.roomType.displayName}</p>
-                        <p className="text-sm text-slate-500">{room.roomType.type}</p>
+                      <div className="flex items-center gap-2">
+                        <Home className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">{room.businessUnit.displayName}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm text-slate-700">{room.floor || '-'}</span>
+                      <div className="space-y-1">
+                        <div className="font-medium">{room.roomType.displayName}</div>
+                        <div className="text-sm text-muted-foreground">{room.roomType.type}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm font-medium">{room.floor || '—'}</span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <StatusIcon className="h-4 w-4 text-slate-400" />
-                        <Badge className={`${getRoomStatusColor(room.status)} border-0`}>
-                          {room.status.replace('_', ' ')}
+                        <StatusIcon className="h-4 w-4 text-muted-foreground" />
+                        <Badge 
+                          variant={statusConfig.variant}
+                          className={`font-medium ${statusConfig.className}`}
+                        >
+                          {formatStatusText(room.status)}
                         </Badge>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${getHousekeepingColor(room.housekeeping)} border-0`}>
-                        {room.housekeeping}
+                      <Badge 
+                        variant={housekeepingConfig.variant}
+                        className={`font-medium ${housekeepingConfig.className}`}
+                      >
+                        {formatStatusText(room.housekeeping)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-600">
-                      {room.lastCleaned ? new Date(room.lastCleaned).toLocaleDateString() : '-'}
+                    <TableCell className="text-sm text-muted-foreground">
+                      {room.lastCleaned ? new Date(room.lastCleaned).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      }) : '—'}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -284,17 +325,17 @@ export default async function RoomsManagement() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link href={`/admin/rooms/${room.id}`}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Room
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
+                            <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Room
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

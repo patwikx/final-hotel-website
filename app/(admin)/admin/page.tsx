@@ -1,5 +1,6 @@
-import { Card, CardContent} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { 
   Calendar, 
   Users, 
@@ -17,7 +18,6 @@ import Link from "next/link"
 import { DashboardCharts } from "./components/charts"
 import { RecentActivity } from "./components/recent-activity"
 import { QuickStats } from "./components/quick-stats"
-
 
 type TrendType = "up" | "down" | "neutral"
 
@@ -64,7 +64,8 @@ export default async function AdminDashboard() {
       change: "+12%",
       trend: "up" as TrendType,
       icon: Calendar,
-      color: "blue"
+      iconColor: "bg-blue-50",
+      iconTextColor: "text-blue-600"
     },
     {
       title: "Active Guests",
@@ -72,7 +73,8 @@ export default async function AdminDashboard() {
       change: "+8%",
       trend: "up" as TrendType,
       icon: Users,
-      color: "green"
+      iconColor: "bg-emerald-50",
+      iconTextColor: "text-emerald-600"
     },
     {
       title: "Properties",
@@ -80,7 +82,8 @@ export default async function AdminDashboard() {
       change: "0%",
       trend: "neutral" as TrendType,
       icon: Building,
-      color: "purple"
+      iconColor: "bg-amber-50",
+      iconTextColor: "text-amber-600"
     },
     {
       title: "Revenue",
@@ -88,7 +91,8 @@ export default async function AdminDashboard() {
       change: "+15%",
       trend: "up" as TrendType,
       icon: TrendingUp,
-      color: "amber"
+      iconColor: "bg-purple-50",
+      iconTextColor: "text-purple-600"
     }
   ]
 
@@ -97,71 +101,77 @@ export default async function AdminDashboard() {
       title: "Today's Check-ins",
       value: todayCheckIns,
       icon: CheckCircle,
-      color: "green"
+      variant: "success" as const,
+      iconColor: "bg-green-50",
+      iconTextColor: "text-green-600"
     },
     {
       title: "Today's Check-outs", 
       value: todayCheckOuts,
       icon: Clock,
-      color: "blue"
+      variant: "default" as const,
+      iconColor: "bg-blue-50",
+      iconTextColor: "text-blue-600"
     },
     {
       title: "Pending Tasks",
       value: 12,
       icon: AlertCircle,
-      color: "orange"
+      variant: "warning" as const,
+      iconColor: "bg-amber-50",
+      iconTextColor: "text-amber-600"
     }
   ]
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Dashboard</h1>
-          <p className="text-slate-600 mt-1">Welcome back! Here&apos;s what&apos;s happening today.</p>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Welcome back! Here&apos;s what&apos;s happening today.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-            <Link href="/admin/reservations/new">
-              <Plus className="h-4 w-4 mr-2" />
-              New Reservation
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/admin/reservations/new">
+            <Plus className="mr-2 h-4 w-4" />
+            New Reservation
+          </Link>
+        </Button>
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.title} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group">
+          <Card key={stat.title} className="border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600 mb-1">{stat.title}</p>
-                  <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                  <div className="flex items-center gap-1 mt-2">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </p>
+                  <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
+                  <div className="flex items-center gap-1.5 text-xs">
                     {stat.trend === "up" ? (
-                      <ArrowUpRight className="h-4 w-4 text-green-600" />
+                      <ArrowUpRight className="h-3 w-3 text-green-600" />
                     ) : stat.trend === "down" ? (
-                      <ArrowDownRight className="h-4 w-4 text-red-600" />
+                      <ArrowDownRight className="h-3 w-3 text-red-600" />
                     ) : null}
-                    <span className={`text-sm font-medium ${
-                      stat.trend === "up" ? "text-green-600" : 
-                      stat.trend === "down" ? "text-red-600" : "text-slate-500"
-                    }`}>
+                    <span className={
+                      stat.trend === "up" ? "text-green-600 font-medium" : 
+                      stat.trend === "down" ? "text-red-600 font-medium" : 
+                      "text-muted-foreground font-medium"
+                    }>
                       {stat.change}
                     </span>
-                    <span className="text-xs text-slate-500">vs last month</span>
+                    <span className="text-muted-foreground">from last month</span>
                   </div>
                 </div>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${
-                  stat.color === "blue" ? "bg-blue-100 text-blue-600" :
-                  stat.color === "green" ? "bg-green-100 text-green-600" :
-                  stat.color === "purple" ? "bg-purple-100 text-purple-600" :
-                  "bg-amber-100 text-amber-600"
-                }`}>
-                  <stat.icon className="h-6 w-6" />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.iconColor}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.iconTextColor}`} />
                 </div>
               </div>
             </CardContent>
@@ -170,21 +180,21 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Today's Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid gap-4 md:grid-cols-3">
         {todayStats.map((stat) => (
-          <Card key={stat.title} className="border-0 shadow-md">
+          <Card key={stat.title} className="border-border">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                  stat.color === "green" ? "bg-green-100 text-green-600" :
-                  stat.color === "blue" ? "bg-blue-100 text-blue-600" :
-                  "bg-orange-100 text-orange-600"
-                }`}>
-                  <stat.icon className="h-5 w-5" />
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {stat.title}
+                  </p>
+                  <p className="text-2xl font-bold tabular-nums">
+                    {stat.value}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${stat.iconColor}`}>
+                  <stat.icon className={`h-5 w-5 ${stat.iconTextColor}`} />
                 </div>
               </div>
             </CardContent>
@@ -193,17 +203,33 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Charts and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <DashboardCharts />
-        </div>
-        <div>
-          <RecentActivity reservations={JSON.parse(JSON.stringify(recentReservations))} />
-        </div>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 border-border">
+          <CardContent className="pl-2">
+            <DashboardCharts />
+          </CardContent>
+        </Card>
+        <Card className="col-span-3 border-border">
+          <CardContent>
+            <RecentActivity reservations={JSON.parse(JSON.stringify(recentReservations))} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Stats */}
-      <QuickStats />
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <div className="space-y-1.5">
+            <CardTitle className="text-xl">Quick Statistics</CardTitle>
+            <CardDescription className="text-sm leading-relaxed">
+              Additional metrics and insights
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <QuickStats />
+        </CardContent>
+      </Card>
     </div>
   )
 }

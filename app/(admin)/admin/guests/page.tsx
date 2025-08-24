@@ -54,80 +54,82 @@ export default async function GuestsManagement() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-8 p-8 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Guests</h1>
-          <p className="text-slate-600 mt-1">Manage guest profiles and preferences</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold tracking-tight">Guest Management</h1>
+          <p className="text-muted-foreground">
+            Manage guest profiles and preferences across your properties
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+          <Button size="sm" asChild>
             <Link href="/admin/guests/new">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Guest
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Guests</p>
+                <p className="text-2xl font-bold tabular-nums">{guestStats.total}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{guestStats.total}</p>
-                <p className="text-sm text-slate-600">Total Guests</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Users className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Star className="h-6 w-6 text-amber-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">VIP Guests</p>
+                <p className="text-2xl font-bold tabular-nums">{guestStats.vip}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{guestStats.vip}</p>
-                <p className="text-sm text-slate-600">VIP Guests</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <Star className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-green-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">With Bookings</p>
+                <p className="text-2xl font-bold tabular-nums">{guestStats.withReservations}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{guestStats.withReservations}</p>
-                <p className="text-sm text-slate-600">With Bookings</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+                <Calendar className="h-5 w-5 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Mail className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Marketing Opt-in</p>
+                <p className="text-2xl font-bold tabular-nums">{guestStats.marketingOptIn}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{guestStats.marketingOptIn}</p>
-                <p className="text-sm text-slate-600">Marketing Opt-in</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <Mail className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -135,20 +137,20 @@ export default async function GuestsManagement() {
       </div>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Guests</CardTitle>
-            <div className="flex items-center gap-4">
+      <Card className="border-border">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <CardTitle className="text-xl">All Guests</CardTitle>
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search guests..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="pl-10 w-full md:w-80"
                 />
               </div>
               <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="mr-2 h-4 w-4" />
                 Filter
               </Button>
             </div>
@@ -158,77 +160,84 @@ export default async function GuestsManagement() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">Guest</TableHead>
-                <TableHead className="font-semibold text-slate-700">Contact</TableHead>
-                <TableHead className="font-semibold text-slate-700">Property</TableHead>
-                <TableHead className="font-semibold text-slate-700">Reservations</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Joined</TableHead>
+              <TableRow>
+                <TableHead className="font-medium text-muted-foreground">Guest</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Contact</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Property</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Reservations</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Status</TableHead>
+                <TableHead className="font-medium text-muted-foreground">Joined</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {guests.map((guest) => (
-                <TableRow key={guest.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
+                <TableRow key={guest.id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-                        <span className="font-semibold text-blue-600">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                        <span className="font-medium text-muted-foreground">
                           {guest.firstName.charAt(0)}{guest.lastName.charAt(0)}
                         </span>
                       </div>
-                      <div>
+                      <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-slate-900">
+                          <p className="font-medium">
                             {guest.firstName} {guest.lastName}
                           </p>
                           {guest.vipStatus && (
-                            <Badge className="bg-amber-100 text-amber-800 border-0 text-xs">
-                              <Star className="h-3 w-3 mr-1" />
+                            <Badge 
+                              variant="secondary"
+                              className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50 font-medium"
+                            >
+                              <Star className="mr-1 h-3 w-3" />
                               VIP
                             </Badge>
                           )}
                         </div>
                         {guest.title && (
-                          <p className="text-sm text-slate-500">{guest.title}</p>
+                          <p className="text-sm text-muted-foreground">{guest.title}</p>
                         )}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-slate-700">
-                        <Mail className="h-3 w-3 text-slate-400" />
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
                         <span>{guest.email}</span>
                       </div>
                       {guest.phone && (
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <Phone className="h-3 w-3 text-slate-400" />
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
                           <span>{guest.phone}</span>
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-slate-700">{guest.businessUnit.displayName}</span>
+                    <span className="text-sm">{guest.businessUnit.displayName}</span>
                   </TableCell>
                   <TableCell>
                     <div className="text-center">
-                      <div className="font-semibold text-slate-900">{guest._count.reservations}</div>
-                      <div className="text-xs text-slate-500">bookings</div>
+                      <div className="font-medium tabular-nums">{guest._count.reservations}</div>
+                      <div className="text-xs text-muted-foreground">bookings</div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${guest.marketingOptIn ? 'bg-green-500' : 'bg-slate-300'}`} />
-                      <span className="text-sm text-slate-700">
+                      <div className={`h-2 w-2 rounded-full ${guest.marketingOptIn ? 'bg-green-500' : 'bg-muted-foreground/50'}`} />
+                      <span className="text-sm">
                         {guest.marketingOptIn ? 'Subscribed' : 'Not subscribed'}
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600">
-                    {new Date(guest.createdAt).toLocaleDateString()}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {new Date(guest.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -240,19 +249,19 @@ export default async function GuestsManagement() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/guests/${guest.id}`}>
-                            <Eye className="h-4 w-4 mr-2" />
+                            <Eye className="mr-2 h-4 w-4" />
                             View Profile
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/guests/${guest.id}/edit`}>
-                            <Edit className="h-4 w-4 mr-2" />
+                            <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/reservations/new?guest=${guest.id}`}>
-                            <Calendar className="h-4 w-4 mr-2" />
+                            <Calendar className="mr-2 h-4 w-4" />
                             New Reservation
                           </Link>
                         </DropdownMenuItem>

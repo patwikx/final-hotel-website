@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { 
   Search, 
   Image as ImageIcon, 
@@ -9,7 +10,9 @@ import {
   List,
   Filter,
   Download,
-
+  FileText,
+  Video,
+  Music
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
@@ -22,6 +25,7 @@ export default async function MediaLibrary() {
   })
 
   const totalSize = mediaItems.reduce((sum, item) => sum + item.size, 0)
+  
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
     const k = 1024
@@ -30,116 +34,184 @@ export default async function MediaLibrary() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const getMediaStats = () => {
+    const images = mediaItems.filter(item => item.mimeType.startsWith('image/')).length
+    const videos = mediaItems.filter(item => item.mimeType.startsWith('video/')).length
+    const documents = mediaItems.filter(item => 
+      item.mimeType.includes('pdf') || 
+      item.mimeType.includes('document') ||
+      item.mimeType.includes('text')
+    ).length
+    
+    return { images, videos, documents }
+  }
+
+  const stats = getMediaStats()
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Media Library</h1>
-          <p className="text-slate-600 mt-1">Manage your images, videos, and documents</p>
+    <div className="flex-1 space-y-6 p-6 md:p-8">
+      {/* Header Section */}
+      <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Media Library</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage and organize your media files
+          </p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+        <Button asChild>
           <Link href="/admin/cms/media/upload">
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Media
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Files
           </Link>
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <ImageIcon className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{mediaItems.length}</p>
-                <p className="text-sm text-slate-600">Total Files</p>
-              </div>
-            </div>
+      {/* Stats Overview */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Files</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{mediaItems.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {mediaItems.length > 0 ? '+0% from last month' : 'No files uploaded yet'}
+            </p>
           </CardContent>
         </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Upload className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{formatFileSize(totalSize)}</p>
-                <p className="text-sm text-slate-600">Storage Used</p>
-              </div>
-            </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
+            <Download className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatFileSize(totalSize)}</div>
+            <p className="text-xs text-muted-foreground">
+              Total storage consumed
+            </p>
           </CardContent>
         </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <ImageIcon className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
-                  {mediaItems.filter(item => item.mimeType.startsWith('image/')).length}
-                </p>
-                <p className="text-sm text-slate-600">Images</p>
-              </div>
-            </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Images</CardTitle>
+            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.images}</div>
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG, SVG files
+            </p>
           </CardContent>
         </Card>
-        
-        <Card className="border-0 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Download className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">1.2K</p>
-                <p className="text-sm text-slate-600">Downloads</p>
-              </div>
-            </div>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Other Files</CardTitle>
+            <Video className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.videos + stats.documents}</div>
+            <p className="text-xs text-muted-foreground">
+              Videos, docs, and more
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">Media Files</CardTitle>
-            <div className="flex items-center gap-4">
+      {/* Media Management Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+            <div className="space-y-1">
+              <CardTitle>Media Files</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Browse and manage your uploaded files
+              </p>
+            </div>
+            
+            {/* Controls */}
+            <div className="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:space-y-0">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input 
-                  placeholder="Search media..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search files..."
+                  className="pl-8 md:w-[300px]"
                 />
               </div>
+              
               <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
+                <Filter className="mr-2 h-4 w-4" />
                 Filter
               </Button>
-              <div className="flex items-center border border-slate-200 rounded-lg">
-                <Button variant="ghost" size="sm" className="rounded-r-none">
+              
+              <div className="flex items-center rounded-md border">
+                <Button variant="ghost" size="sm" className="rounded-r-none border-r">
                   <Grid3X3 className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="rounded-l-none border-l">
+                <Button variant="ghost" size="sm" className="rounded-l-none">
                   <List className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           </div>
         </CardHeader>
-        
-        <CardContent className="p-6">
-          <MediaGrid mediaItems={JSON.parse(JSON.stringify(mediaItems))} />
+
+        <CardContent>
+          {mediaItems.length > 0 ? (
+            <MediaGrid mediaItems={JSON.parse(JSON.stringify(mediaItems))} />
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">No media files</h3>
+              <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                You haven&apos;t uploaded any files yet. Get started by uploading your first media file.
+              </p>
+              <Button asChild>
+                <Link href="/admin/cms/media/upload">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Files
+                </Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* File Types Legend */}
+      {mediaItems.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">File Types</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {stats.images > 0 && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <ImageIcon className="h-3 w-3" />
+                  Images ({stats.images})
+                </Badge>
+              )}
+              {stats.videos > 0 && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Video className="h-3 w-3" />
+                  Videos ({stats.videos})
+                </Badge>
+              )}
+              {stats.documents > 0 && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <FileText className="h-3 w-3" />
+                  Documents ({stats.documents})
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -56,103 +56,117 @@ export default async function PropertiesManagement() {
 
   // Serialize the data to ensure type safety
   const properties: PropertyWithCounts[] = JSON.parse(JSON.stringify(propertiesData));
-  const getPropertyTypeColor = (type: string) => {
+  
+  const getPropertyTypeVariant = (type: string) => {
     switch (type) {
-      case 'HOTEL': return 'bg-blue-100 text-blue-800'
-      case 'RESORT': return 'bg-emerald-100 text-emerald-800'
-      case 'VILLA_COMPLEX': return 'bg-purple-100 text-purple-800'
-      case 'BOUTIQUE_HOTEL': return 'bg-pink-100 text-pink-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'HOTEL': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      case 'RESORT': 
+        return { variant: "secondary" as const, className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50" }
+      case 'VILLA_COMPLEX': 
+        return { variant: "outline" as const, className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-50" }
+      case 'BOUTIQUE_HOTEL': 
+        return { variant: "outline" as const, className: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50" }
+      default: 
+        return { variant: "secondary" as const, className: "" }
     }
   }
 
-  const getStatusColor = (isActive: boolean, isPublished: boolean) => {
-    if (!isActive) return 'bg-red-100 text-red-800'
-    if (isPublished) return 'bg-green-100 text-green-800'
-    return 'bg-yellow-100 text-yellow-800'
+  const getStatusVariant = (isActive: boolean, isPublished: boolean) => {
+    if (!isActive) return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+    if (isPublished) return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+    return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
   }
 
   const getStatusText = (isActive: boolean, isPublished: boolean) => {
     if (!isActive) return 'Inactive'
-    if (isPublished) return 'Live'
+    if (isPublished) return 'Published'
     return 'Draft'
   }
 
+  const formatPropertyType = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="flex-1 space-y-8 p-8 pt-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 font-serif">Properties</h1>
-          <p className="text-slate-600 mt-1">Manage your hotel properties and business units</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">Properties</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Manage your hotel properties and business units
+            </p>
+          </div>
         </div>
-        <Button asChild className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg">
+        <Button asChild>
           <Link href="/admin/properties/new">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Property
           </Link>
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Building className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Properties</p>
+                <p className="text-2xl font-bold tabular-nums">{properties.length}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{properties.length}</p>
-                <p className="text-sm text-slate-600">Total Properties</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Building className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Eye className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Published</p>
+                <p className="text-2xl font-bold tabular-nums">
                   {properties.filter(p => p.isPublished).length}
                 </p>
-                <p className="text-sm text-slate-600">Published</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                <Eye className="h-5 w-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Bed className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Rooms</p>
+                <p className="text-2xl font-bold tabular-nums">
                   {properties.reduce((sum, p) => sum + p._count.rooms, 0)}
                 </p>
-                <p className="text-sm text-slate-600">Total Rooms</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <Bed className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
+                <p className="text-2xl font-bold tabular-nums">
                   {properties.reduce((sum, p) => sum + p._count.reservations, 0)}
                 </p>
-                <p className="text-sm text-slate-600">Total Bookings</p>
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <Users className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -160,16 +174,21 @@ export default async function PropertiesManagement() {
       </div>
 
       {/* Main Content */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="border-b border-slate-100">
+      <Card className="border-border">
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-slate-900">All Properties</CardTitle>
-            <div className="flex items-center gap-4">
+            <div className="space-y-1.5">
+              <CardTitle className="text-xl">All Properties</CardTitle>
+              <CardDescription className="text-sm leading-relaxed">
+                A list of all your properties and their current status
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input 
                   placeholder="Search properties..." 
-                  className="pl-10 w-80 bg-slate-50 border-slate-200 focus:bg-white"
+                  className="w-[300px] pl-9"
                 />
               </div>
             </div>
@@ -179,80 +198,87 @@ export default async function PropertiesManagement() {
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-100">
-                <TableHead className="font-semibold text-slate-700">Property</TableHead>
-                <TableHead className="font-semibold text-slate-700">Type</TableHead>
-                <TableHead className="font-semibold text-slate-700">Location</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Rooms</TableHead>
-                <TableHead className="font-semibold text-slate-700">Bookings</TableHead>
-                <TableHead className="w-12"></TableHead>
+              <TableRow>
+                <TableHead>Property</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Rooms</TableHead>
+                <TableHead>Bookings</TableHead>
+                <TableHead className="w-[70px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {properties.map((property) => (
-                <TableRow key={property.id} className="border-slate-100 hover:bg-slate-50 transition-colors">
+                <TableRow key={property.id}>
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl flex items-center justify-center">
-                        <Building className="h-6 w-6 text-amber-600" />
+                    <div className="flex items-center space-x-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                        <Building className="h-4 w-4" />
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">{property.displayName}</p>
-                        <p className="text-sm text-slate-500">/{property.slug}</p>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium leading-none">{property.displayName}</p>
+                        <p className="text-xs text-muted-foreground">/{property.slug}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${getPropertyTypeColor(property.propertyType)} border-0`}>
-                      {property.propertyType.replace('_', ' ')}
+                    <Badge 
+                      variant={getPropertyTypeVariant(property.propertyType).variant}
+                      className={`text-xs font-medium ${getPropertyTypeVariant(property.propertyType).className}`}
+                    >
+                      {formatPropertyType(property.propertyType)}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-slate-400" />
-                      <span className="text-sm text-slate-700">{property.city}, {property.country}</span>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-3 w-3" />
+                      <span className="font-medium">{property.city}, {property.country}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${getStatusColor(property.isActive, property.isPublished)} border-0`}>
+                    <Badge 
+                      variant={getStatusVariant(property.isActive, property.isPublished).variant}
+                      className={`text-xs font-medium ${getStatusVariant(property.isActive, property.isPublished).className}`}
+                    >
                       {getStatusText(property.isActive, property.isPublished)}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Bed className="h-4 w-4 text-slate-400" />
-                      <span className="text-sm text-slate-700">{property._count.rooms}</span>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Bed className="h-3 w-3" />
+                      <span className="font-medium tabular-nums">{property._count.rooms}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="text-sm text-slate-700">{property._count.reservations}</span>
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Users className="h-3 w-3" />
+                      <span className="font-medium tabular-nums">{property._count.reservations}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/properties/${property.slug}`}>
-                            <Edit className="h-4 w-4 mr-2" />
+                            <Edit className="mr-2 h-4 w-4" />
                             Manage
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                           <Link href={`/properties/${property.slug}`} target="_blank">
-                            <Eye className="h-4 w-4 mr-2" />
+                            <Eye className="mr-2 h-4 w-4" />
                             View Live
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Settings className="h-4 w-4 mr-2" />
+                          <Settings className="mr-2 h-4 w-4" />
                           Settings
                         </DropdownMenuItem>
                       </DropdownMenuContent>

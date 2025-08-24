@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
 import { 
   ArrowLeft, 
   Building, 
@@ -12,7 +13,8 @@ import {
   Bed,
   Users,
   Calendar,
-  DollarSign
+  DollarSign,
+  MoreVertical
 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
@@ -79,125 +81,154 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
   // Serialize the data to ensure type safety
   const property: PropertyWithDetails = JSON.parse(JSON.stringify(propertyData));
-  const getPropertyTypeColor = (type: string) => {
+  
+  const getPropertyTypeVariant = (type: string) => {
     switch (type) {
-      case 'HOTEL': return 'bg-blue-100 text-blue-800'
-      case 'RESORT': return 'bg-emerald-100 text-emerald-800'
-      case 'VILLA_COMPLEX': return 'bg-purple-100 text-purple-800'
-      case 'BOUTIQUE_HOTEL': return 'bg-pink-100 text-pink-800'
-      default: return 'bg-slate-100 text-slate-800'
+      case 'HOTEL': 
+        return { variant: "default" as const, className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-50" }
+      case 'RESORT': 
+        return { variant: "secondary" as const, className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-50" }
+      case 'VILLA_COMPLEX': 
+        return { variant: "outline" as const, className: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-50" }
+      case 'BOUTIQUE_HOTEL': 
+        return { variant: "outline" as const, className: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-50" }
+      default: 
+        return { variant: "secondary" as const, className: "" }
     }
   }
 
-  const getStatusColor = (isActive: boolean, isPublished: boolean) => {
-    if (!isActive) return 'bg-red-100 text-red-800'
-    if (isPublished) return 'bg-green-100 text-green-800'
-    return 'bg-yellow-100 text-yellow-800'
+  const getStatusVariant = (isActive: boolean, isPublished: boolean) => {
+    if (!isActive) return { variant: "destructive" as const, className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-50" }
+    if (isPublished) return { variant: "default" as const, className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-50" }
+    return { variant: "secondary" as const, className: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50" }
   }
 
   const getStatusText = (isActive: boolean, isPublished: boolean) => {
     if (!isActive) return 'Inactive'
-    if (isPublished) return 'Live'
+    if (isPublished) return 'Published'
     return 'Draft'
   }
 
+  const formatPropertyType = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" asChild>
-            <Link href="/admin/properties">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Properties
-            </Link>
-          </Button>
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-slate-900 font-serif">{property.displayName}</h1>
-              <Badge className={`${getStatusColor(property.isActive, property.isPublished)} border-0`}>
-                {getStatusText(property.isActive, property.isPublished)}
-              </Badge>
-            </div>
-            <div className="flex items-center gap-4 text-slate-600">
-              <div className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                <span>{property.city}, {property.country}</span>
-              </div>
-              <Badge className={`${getPropertyTypeColor(property.propertyType)} border-0`}>
-                {property.propertyType.replace('_', ' ')}
-              </Badge>
-            </div>
+    <div className="flex-1 space-y-8 p-8 pt-6">
+      {/* Back Navigation */}
+      <div className="flex items-center space-x-2">
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground">
+          <Link href="/admin/properties">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Properties
+          </Link>
+        </Button>
+        <span className="text-muted-foreground">/</span>
+        <span className="text-sm font-medium text-foreground">{property.displayName}</span>
+      </div>
+
+      {/* Page Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">{property.displayName}</h1>
+            <Badge 
+              variant={getStatusVariant(property.isActive, property.isPublished).variant}
+              className={`font-medium ${getStatusVariant(property.isActive, property.isPublished).className}`}
+            >
+              {getStatusText(property.isActive, property.isPublished)}
+            </Badge>
           </div>
+          
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              <span className="font-medium">{property.city}, {property.country}</span>
+            </div>
+            <Separator orientation="vertical" className="hidden h-4 md:block" />
+            <Badge 
+              variant={getPropertyTypeVariant(property.propertyType).variant}
+              className={`w-fit font-medium ${getPropertyTypeVariant(property.propertyType).className}`}
+            >
+              <Building className="mr-1.5 h-3 w-3" />
+              {formatPropertyType(property.propertyType)}
+            </Badge>
+          </div>
+          
+          {property.description && (
+            <p className="max-w-2xl text-sm text-muted-foreground leading-relaxed">
+              {property.description}
+            </p>
+          )}
         </div>
         
-        <div className="flex items-center gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
             <Link href={`/properties/${property.slug}`} target="_blank">
-              <Eye className="h-4 w-4 mr-2" />
+              <Eye className="mr-2 h-4 w-4" />
               View Live
             </Link>
           </Button>
-          <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0">
-            <Edit className="h-4 w-4 mr-2" />
+          <Button size="sm">
+            <Edit className="mr-2 h-4 w-4" />
             Edit Property
           </Button>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-md">
+      {/* Quick Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                <Bed className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Rooms</p>
+                <p className="text-2xl font-bold tabular-nums">{property._count.rooms}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{property._count.rooms}</p>
-                <p className="text-sm text-slate-600">Total Rooms</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                <Bed className="h-5 w-5 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                <Building className="h-6 w-6 text-green-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Room Types</p>
+                <p className="text-2xl font-bold tabular-nums">{property._count.roomTypes}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{property._count.roomTypes}</p>
-                <p className="text-sm text-slate-600">Room Types</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                <Building className="h-5 w-5 text-emerald-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-purple-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Reservations</p>
+                <p className="text-2xl font-bold tabular-nums">{property._count.reservations}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{property._count.reservations}</p>
-                <p className="text-sm text-slate-600">Reservations</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                <Calendar className="h-5 w-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card className="border-0 shadow-md">
+        <Card className="border-border">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Users className="h-6 w-6 text-amber-600" />
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Total Guests</p>
+                <p className="text-2xl font-bold tabular-nums">{property._count.guests}</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-900">{property._count.guests}</p>
-                <p className="text-sm text-slate-600">Guests</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+                <Users className="h-5 w-5 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -206,49 +237,88 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="details" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-slate-100">
-          <TabsTrigger value="details" className="data-[state=active]:bg-white">Details</TabsTrigger>
-          <TabsTrigger value="room-types" className="data-[state=active]:bg-white">Room Types</TabsTrigger>
-          <TabsTrigger value="rooms" className="data-[state=active]:bg-white">Rooms</TabsTrigger>
-          <TabsTrigger value="reservations" className="data-[state=active]:bg-white">Reservations</TabsTrigger>
-          <TabsTrigger value="analytics" className="data-[state=active]:bg-white">Analytics</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+          <TabsTrigger 
+            value="details" 
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Details
+          </TabsTrigger>
+          <TabsTrigger 
+            value="room-types"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Room Types
+          </TabsTrigger>
+          <TabsTrigger 
+            value="rooms"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Rooms
+          </TabsTrigger>
+          <TabsTrigger 
+            value="reservations"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Reservations
+          </TabsTrigger>
+          <TabsTrigger 
+            value="analytics"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm font-medium"
+          >
+            Analytics
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details">
+        <TabsContent value="details" className="space-y-4 mt-6">
           <PropertyDetailsForm property={JSON.parse(JSON.stringify(property))} />
         </TabsContent>
 
-        <TabsContent value="room-types">
+        <TabsContent value="room-types" className="space-y-4 mt-6">
           <RoomTypesSection 
             property={property} 
             roomTypes={property.roomTypes} 
           />
         </TabsContent>
 
-        <TabsContent value="rooms">
+        <TabsContent value="rooms" className="space-y-4 mt-6">
           <RoomsSection 
             property={property} 
             rooms={property.rooms} 
           />
         </TabsContent>
 
-        <TabsContent value="reservations">
+        <TabsContent value="reservations" className="space-y-4 mt-6">
           <ReservationsSection 
             property={property} 
             reservations={property.reservations} 
           />
         </TabsContent>
 
-        <TabsContent value="analytics">
-          <Card className="border-0 shadow-lg">
-            <CardHeader>
-              <CardTitle>Property Analytics</CardTitle>
+        <TabsContent value="analytics" className="space-y-4 mt-6">
+          <Card className="border-border">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <CardTitle className="text-xl">Analytics Dashboard</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed">
+                    Comprehensive analytics and performance metrics for {property.displayName}
+                  </CardDescription>
+                </div>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-slate-500">
-                <DollarSign className="h-16 w-16 mx-auto mb-4 text-slate-300" />
-                <p className="text-lg font-medium mb-2">Analytics Dashboard</p>
-                <p>Detailed analytics and reporting coming soon</p>
+              <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-16 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/50 mb-4">
+                  <DollarSign className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Coming Soon</h3>
+                <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
+                  Detailed analytics including revenue metrics, occupancy rates, and performance insights will be available here.
+                </p>
               </div>
             </CardContent>
           </Card>
