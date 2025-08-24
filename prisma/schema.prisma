@@ -2,9 +2,8 @@
 // Modified to support a single website showcasing all business units
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -102,6 +101,10 @@ enum PaymentStatus {
   CANCELLED
   FAILED
   DISPUTED
+  AWAITING_PAYMENT_METHOD
+  AWAITING_NEXT_ACTION
+  PROCESSING
+  SUCCEEDED
 }
 
 enum PaymentMethod {
@@ -1226,8 +1229,11 @@ model Reservation {
   guestNotes      String?
   internalNotes   String?
 
-  bookedAt DateTime @default(now())
-  bookedBy String?
+  bookedAt        DateTime  @default(now())
+  bookedBy        String?
+  paidAt          DateTime?
+  paymentIntentId String?
+  paymentProvider String?
 
   cancelledAt        DateTime?
   cancellationReason String?
@@ -1480,11 +1486,17 @@ model Payment {
   method   PaymentMethod
   status   PaymentStatus @default(PENDING)
 
-  providerRef      String?
-  providerResponse Json?
+  provider          String   @default("paymongo")
+  providerPaymentId String   @unique // The Payment Intent ID from PayMongo (e.g., pi_xxxx)
+  clientKey         String? // The client_key needed for frontend confirmation
+  paymentMethod     String? // e.g., "card", "gcash"
+  netAmount         Decimal? // Amount after fees
+  fee               Decimal? // PayMongo's fee
 
   transactionDate DateTime  @default(now())
   processedAt     DateTime?
+
+  rawPayload Json? // Store the full webhook payload for auditing
 
   notes String?
 

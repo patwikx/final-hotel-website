@@ -2,6 +2,7 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { AdminSidebar } from "./admin/components/sidebar"
 import { AdminHeader } from "./admin/components/header"
 
+
 export default function AdminLayout({
   children,
 }: {
@@ -9,6 +10,7 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
+
       <div className="min-h-screen w-full flex bg-slate-50">
         <div className="flex-shrink-0">
           <AdminSidebar />
@@ -22,6 +24,7 @@ export default function AdminLayout({
           </main>
         </div>
       </div>
+
     </SidebarProvider>
   )
 }
